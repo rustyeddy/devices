@@ -74,6 +74,8 @@ type Device struct {
 	err    error        // Last error encountered (use SetError to set)
 	mu     sync.RWMutex // Protects device state
 	Opener              // Device opening interface
+
+	Get func() (int, error)
 }
 
 // SetError sets the device error and updates the state to StateError

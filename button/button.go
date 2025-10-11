@@ -45,7 +45,7 @@ func New(name string, offset int, opts ...gpiocdev.LineReqOption) *Button {
 
 // ReadPub will read the value of the button and publish the results.
 func (b *Button) ReadPub() {
-	val, err := b.Get()
+	val, err := b.Device.Get()
 	if err != nil {
 		slog.Error("Failed to read buttons value: ", "error", err.Error())
 		return

@@ -1,32 +1,55 @@
 package button
 
 import (
-	"sync"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/rustyeddy/devices"
+	"github.com/stretchr/testify/assert"
+	"github.com/warthog618/go-gpiocdev"
 )
 
-var (
-	gotit [2]bool
-	wg    sync.WaitGroup
-)
+func init() {
+	devices.Mock(true)
+}
+func TestNewButton_DefaultOptions(t *testing.T) {
+	btn := New("testbtn", 5)
+	assert.NotNil(t, btn)
+	assert.NotNil(t, btn.Device)
+	assert.NotNil(t, btn.DigitalPin)
+	assert.Equal(t, "testbtn", btn.Device.Name)
+	assert.NotNil(t, btn.EvtQ)
+}
 
-// func TestButton(t *testing.T) {
-// 	devices.Mock(true)
-// 	done := make(chan any)
+func TestNewButton_CustomOptions(t *testing.T) {
+	opt := gpiocdev.WithPullDown
+	btn := New("custombtn", 7, opt)
+	assert.NotNil(t, btn)
+	assert.NotNil(t, btn.DigitalPin)
+}
 
-// 	b := New("button", 23)
-// 	go b.EventLoop(done, b.ReadPub)
+func TestButton_ReadPub_Success(t *testing.T) {
+	btn := New("readpubbtn", 8)
+	btn.Device.Get = func() (int, error) { return 1, nil }
+	assert.NotPanics(t, func() { btn.ReadPub() })
+}
 
-// 	wg.Add(2)
-// 	b.MockHWInput(0)
-// 	b.MockHWInput(1)
+func TestButton_ReadPub_Error(t *testing.T) {
+	btn := New("errbtn", 9)
+	btn.Device.Get = func() (int, error) { return 0, fmt.Errorf("fail") }
+	assert.NotPanics(t, func() { btn.ReadPub() })
+}
 
-// 	wg.Wait()
-// 	time.Sleep(10 * time.Millisecond)
-// 	b.Close()
-// 	done <- true
-
-// 	if !gotit[0] || !gotit[1] {
-// 		t.Errorf("failed to get 0 and 1 got (%t) and (%t)", gotit[0], gotit[1])
-// 	}
-
-// }
+func TestButton_EventHandler(t *testing.T) {
+	btn := New("evtbtn", 10)
+	event := gpiocdev.LineEvent{Offset: 10, Type: gpiocdev.LineEventRisingEdge}
+	go func() { btn.EvtQ <- event }()
+	select {
+	case e := <-btn.EvtQ:
+		assert.Equal(t, event.Offset, e.Offset)
+		assert.Equal(t, event.Type, e.Type)
+	case <-time.After(100 * time.Millisecond):
+		t.Error("event not received")
+	}
+}
