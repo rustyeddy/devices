@@ -22,6 +22,7 @@ const (
 	StateRunning      DeviceState = "running"
 	StateError        DeviceState = "error"
 	StateStopped      DeviceState = "stopped"
+	StateMocked       DeviceState = "mocked"
 )
 
 // Opener represents a device that can be opened and closed for communication.
@@ -130,7 +131,7 @@ func (d *Device) TimerLoop(ctx context.Context, period time.Duration, readpub fu
 
 // String returns the device name
 func (d *Device) String() string {
-	return d.Name + " (" + string(d.State) + ") "
+	return d.Name + " (" + string(d.State) + ")"
 }
 
 // JSON returns a JSON representation of the device

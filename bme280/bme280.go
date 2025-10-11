@@ -4,7 +4,7 @@ package bme280
 
 import (
 	"errors"
-	"math/rand"
+	"fmt"
 
 	"github.com/maciej/bme280"
 	"github.com/rustyeddy/devices"
@@ -19,6 +19,8 @@ type BME280 struct {
 	bus    string
 	addr   int
 	driver *bme280.Driver
+
+	MockReader func() (bme280.Response, error) // Function to mock reading data
 }
 
 type Env struct {
@@ -70,6 +72,13 @@ var (
 const (
 	DefaultI2CBus     = "/dev/i2c-1"
 	DefaultI2CAddress = 0x77
+
+	minTemperature = -40.0
+	maxTemperature = 85.0
+	minHumidity    = 0.0
+	maxHumidity    = 100.0
+	minPressure    = 300.0
+	maxPressure    = 1100.0
 )
 
 // Create a new BME280 at the give bus and address. Defaults are
@@ -86,7 +95,10 @@ func New(name, bus string, addr int) *BME280 {
 // Init opens the i2c bus at the specified address and gets the device
 // ready for reading
 func (b *BME280) Open() error {
-	if devices.IsMock() == true {
+	if devices.IsMock() {
+		if b.MockReader == nil {
+			b.MockReader = b.MockRead
+		}
 		return nil
 	}
 
@@ -112,44 +124,43 @@ func (b *BME280) Open() error {
 // Read one Response from the sensor. If this device is being mocked
 // we will make up some random floating point numbers between 0 and
 // 100.
-func (b *BME280) Read() (*bme280.Response, error) {
+func (b *BME280) Read() (resp bme280.Response, err error) {
 	if devices.IsMock() {
-		return &bme280.Response{
-			Temperature: rand.Float64() * 100,
-			Pressure:    rand.Float64() * 100,
-			Humidity:    rand.Float64() * 100,
-		}, nil
+		resp, err = b.MockReader()
+	} else {
+		resp, err = b.driver.Read()
+
+	}
+	if err != nil {
+		return resp, err
 	}
 
-	response, err := b.driver.Read()
-	if err != nil {
-		return nil, err
+	inrange := func(val float64, min float64, max float64) error {
+		if val < min || val > max {
+			return fmt.Errorf("%7.2f out of range: min(%7.2f) max(%7.2f)", val, min, max)
+		}
+		return nil
 	}
-	return &response, err
+
+	if err = inrange(resp.Temperature, minTemperature, maxTemperature); err != nil {
+		return resp, err
+	}
+	if err = inrange(resp.Humidity, minHumidity, maxHumidity); err != nil {
+		return resp, err
+	}
+	if err = inrange(resp.Pressure, minPressure, maxPressure); err != nil {
+		return resp, err
+	}
+	return resp, err
 }
 
-// ReadPub reads the latest values from the sendsor then publishes
-// them on the MQTT topic assigned to this device.
-// func (b *BME280) ReadPub() error {
-// 	vals, err := b.Read()
-// 	if err != nil {
-// 		return fmt.Errorf("reading BME280: %w", err)
-// 	}
-
-// 	vals.Temperature = (vals.Temperature * (9 / 5)) + 32
-
-// 	valstr := &Env{
-// 		Temperature: fmt.Sprintf("%.2f", vals.Temperature),
-// 		Humidity:    fmt.Sprintf("%.2f", vals.Humidity),
-// 		Pressure:    fmt.Sprintf("%.2f", vals.Pressure),
-// 	}
-
-// 	b, err := json.Marshal(valstr)
-// 	if err != nil {
-// 		return errors.New("BME280 failed marshal read response" + err.Error())
-// 	}
-// 	return nil
-// }
+func (b *BME280) MockRead() (bme280.Response, error) {
+	return bme280.Response{
+		Temperature: 50.12,
+		Pressure:    900.34,
+		Humidity:    77.56,
+	}, nil
+}
 
 // ConvertCtoF converts Celsius to Fahrenheit
 func ConvertCtoF(celsius float64) float64 {
