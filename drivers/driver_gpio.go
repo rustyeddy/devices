@@ -107,6 +107,9 @@ type DigitalPin struct {
 	opts []gpiocdev.LineReqOption
 	Line
 
+	On  func() error
+	Off func() error
+
 	offset int
 	val    int
 	mock   bool
@@ -117,7 +120,11 @@ type DigitalPin struct {
 
 func NewDigitalPin(name string, offset int, opts ...gpiocdev.LineReqOption) *DigitalPin {
 	gpio := GetGPIO()
-	return gpio.Pin(name, offset, opts...)
+	pin := gpio.Pin(name, offset, opts...)
+	pin.On = pin.ON
+	pin.Off = pin.OFF
+
+	return pin
 }
 
 func (p *DigitalPin) PinName() string {
@@ -182,13 +189,12 @@ func (pin *DigitalPin) Set(v int) error {
 	return pin.Line.SetValue(v)
 }
 
-// On sets the value of the pin to 1
-func (pin *DigitalPin) On() error {
+func (pin *DigitalPin) ON() error {
 	return pin.Set(1)
 }
 
 // Off sets the value of the pin to 0
-func (pin *DigitalPin) Off() error {
+func (pin *DigitalPin) OFF() error {
 	return pin.Set(0)
 }
 
@@ -206,23 +212,6 @@ func (pin *DigitalPin) Toggle() error {
 	}
 	return pin.Set(val)
 }
-
-// Callback is the default callback for pins if they are
-// registered with the MQTT.Subscribe() function
-// func (pin DigitalPin) Callback(msg *messanger.Msg) {
-// 	cmd := msg.String()
-// 	switch cmd {
-// 	case "on", "1":
-// 		pin.On()
-
-// 	case "off", "0":
-// 		pin.Off()
-
-// 	case "toggle":
-// 		pin.Toggle()
-// 	}
-// 	return
-// }
 
 func (d *DigitalPin) EventLoop(done chan any, readpub func()) {
 	running := true
