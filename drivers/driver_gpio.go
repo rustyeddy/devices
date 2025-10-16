@@ -53,6 +53,8 @@ func (gpio *GPIO) Pin(name string, offset int, opts ...gpiocdev.LineReqOption) *
 		offset: offset,
 		opts:   dopts,
 	}
+	p.On = p.ON
+	p.Off = p.OFF
 
 	if gpio.pins == nil {
 		gpio.pins = make(map[int]*DigitalPin)

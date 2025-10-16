@@ -70,6 +70,7 @@ type Device struct {
 	State  DeviceState   // Current device state
 	Period time.Duration // Period for timed operations
 	Val    any           // Mock value storage
+	Topic  string        // The topic to advertise and subscribe to
 
 	err    error        // Last error encountered (use SetError to set)
 	mu     sync.RWMutex // Protects device state
@@ -96,9 +97,10 @@ func (d *Device) Error() error {
 }
 
 // NewDevice creates a new device with the given name
-func NewDevice(name string, t string) *Device {
+func NewDevice(name string, topic string) *Device {
 	return &Device{
 		Name:  name,
+		Topic: topic,
 		State: StateUnknown,
 	}
 }
