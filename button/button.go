@@ -13,14 +13,13 @@ import (
 // the Button is pushed (rising edge) or when it is released (falling
 // edge). Low is open, high is closed.
 type Button struct {
-	*devices.Device
 	*drivers.DigitalPin
 }
 
 // New creates a new button with the given name, offset represents the
 // pin number and a series of line options. Todo reference the gpiodev
 // manual for LineReq options
-func New(name string, offset int, opts ...gpiocdev.LineReqOption) *Button {
+func New(name string, offset int, opts ...gpiocdev.LineReqOption) devices.Device[int] {
 	var evtQ chan gpiocdev.LineEvent
 	evtQ = make(chan gpiocdev.LineEvent)
 	bopts := []gpiocdev.LineReqOption{
@@ -36,19 +35,38 @@ func New(name string, offset int, opts ...gpiocdev.LineReqOption) *Button {
 	}
 
 	b := &Button{
-		Device:     devices.NewDevice(name, "mqtt"),
 		DigitalPin: drivers.NewDigitalPin(name, offset, bopts...),
 	}
 	b.EvtQ = evtQ
 	return b
 }
 
+func (b *Button) ID() string {
+	return b.PinName()
+}
+
+func (b *Button) Open() error {
+	return nil
+}
+
+func (b *Button) Close() error {
+	return nil
+}
+
 // ReadPub will read the value of the button and publish the results.
-func (b *Button) ReadPub() {
-	val, err := b.Device.Get()
+func (b *Button) Get() (int, error) {
+	val, err := b.DigitalPin.Get()
 	if err != nil {
 		slog.Error("Failed to read buttons value: ", "error", err.Error())
-		return
+		return val, err
 	}
-	slog.Debug("read", "device", "button", "val", val)
+	return val, err
+}
+
+func (b *Button) Set(but int) error {
+	return devices.ErrNotImplemented
+}
+
+func (b *Button) Type() devices.Type {
+	return devices.TypeInt
 }

@@ -1,8 +1,7 @@
 package main
 
 import (
-	"context"
-	"time"
+	"fmt"
 
 	"github.com/rustyeddy/devices/bme280"
 )
@@ -16,11 +15,10 @@ func main() {
 		panic(err)
 	}
 
-	// start reading in a loop and publish the results via MQTT
-	done := make(chan any)
-	go bme.TimerLoop(context.TODO(), 5*time.Second, func() error {
-		return nil
-	})
+	val, err := bme.Get()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("BME values %+v\n", val)
 
-	<-done
 }

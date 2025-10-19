@@ -133,6 +133,10 @@ func (p *DigitalPin) PinName() string {
 	return p.name
 }
 
+func (p *DigitalPin) ID() string {
+	return p.name
+}
+
 // Init the pin from the offset and mode
 func (p *DigitalPin) Init() error {
 

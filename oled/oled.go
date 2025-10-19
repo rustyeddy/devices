@@ -1,6 +1,7 @@
 package oled
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"image/draw"
@@ -30,58 +31,90 @@ const (
 )
 
 type OLED struct {
-	*devices.Device
+	id         string
 	Dev        *ssd1306.Dev
 	Height     int
 	Width      int
 	Font       *basicfont.Face
 	Background *image1bit.VerticalLSB
 
+	devices.Device[*OLED]
+
 	bus  string
 	addr int
 }
 
-func New(name string, width, height int) (*OLED, error) {
-	d := &OLED{
+func NewDevice(id string) (devices.Device[any], error) {
+	o, err := New(id, 128, 64)
+	return o, err
+}
+
+func New(id string, width, height int) (*OLED, error) {
+	o := &OLED{
+		id:     id,
 		Height: height,
 		Width:  width,
 		bus:    "/dev/i2c-1",
 		addr:   0x3c,
 	}
-	d.Device = devices.NewDevice(name, "oled")
-	d.Background = image1bit.NewVerticalLSB(image.Rect(0, 0, width, height))
-
+	o.Background = image1bit.NewVerticalLSB(image.Rect(0, 0, width, height))
 	if devices.IsMock() {
-		return d, nil
+		return o, nil
 	}
+	return o, nil
+}
+
+func (o *OLED) ID() string {
+	return o.id
+}
+
+func (o *OLED) Type() devices.Type {
+	return devices.TypeAny
+}
+
+func (o *OLED) Open() error {
 
 	// Load all the drivers:
 	if _, err := host.Init(); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Open a handle to the first available I²C bus:
-	bus, err := i2creg.Open("/dev/i2c-1")
+	bus, err := i2creg.Open(o.bus)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Open a handle to a ssd1306 connected on the I²C bus:
 	opts := &ssd1306.DefaultOpts
-	opts.H = height
-	opts.W = width
+	opts.H = o.Height
+	opts.W = o.Width
 
-	d.Dev, err = ssd1306.NewI2C(bus, opts)
+	o.Dev, err = ssd1306.NewI2C(bus, opts)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return d, nil
+	return nil
+}
+
+func (o *OLED) Close() error {
+	return errors.New("TODO Need to implement bme280 close")
 }
 
 func (d *OLED) Clear() {
 	// got to be a better way
 	d.Rectangle(0, 0, d.Width, d.Height, Off)
+}
+
+func (d *OLED) Get() (any, error) {
+	return nil, devices.ErrNotImplemented
+}
+
+func (d *OLED) Set(v any) error {
+
+	// what to do with set?
+	return nil
 }
 
 func (d *OLED) Draw() error {

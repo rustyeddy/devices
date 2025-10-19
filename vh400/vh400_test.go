@@ -4,59 +4,53 @@ import (
 	"testing"
 
 	"github.com/rustyeddy/devices"
+	"github.com/stretchr/testify/assert"
 )
 
+func init() {
+	devices.SetMock(true)
+}
+
 func TestVH400(t *testing.T) {
-	devices.Mock(true)
-
 	v := New("vh400", 1)
-	if v.Name() != "vh400" {
-		t.Errorf("vh400 name expected (%s) got (%s)", "vh400", v.Name())
-	}
+	assert.Equal(t, "vh400", v.ID())
 
-	val, err := v.Read()
-	if err != nil {
-		t.Errorf("VH400 Read failed %s", err)
-	}
+	err := v.Open()
+	assert.NoError(t, err, "VH400 failed to open")
 
-	if val == 0.0 {
-		t.Errorf("Expected value but got 0")
-	}
+	val, err := v.Get()
+	assert.NoError(t, err)
+	assert.NotEqual(t, val, 0.0)
 }
 
 func TestVH400_Name_ReturnsCorrectName(t *testing.T) {
-	devices.Mock(true)
 	v := New("vh400test", 2)
 	if v == nil {
 		t.Fatalf("New returned nil")
 	}
-	if v.Name() != "vh400test" {
-		t.Errorf("Name() expected (%s) got (%s)", "vh400test", v.Name())
+	if v.ID() != "vh400test" {
+		t.Errorf("Name() expected (%s) got (%s)", "vh400test", v.ID())
 	}
 }
 
 func TestVH400_Read_ReturnsVWC(t *testing.T) {
-	devices.Mock(true)
 	v := New("vh400", 3)
-	if v == nil {
-		t.Fatalf("New returned nil")
-	}
-	val, err := v.Read()
-	if err != nil {
-		t.Errorf("Read() returned error: %v", err)
-	}
-	if val == 0.0 {
-		t.Errorf("Read() returned zero VWC, expected non-zero value")
-	}
+	assert.NotNil(t, v)
+
+	err := v.Open()
+	assert.NoError(t, err)
+
+	val, err := v.Get()
+	assert.NoError(t, err)
+	assert.NotEqual(t, val, 0.0)
 }
 
 func TestVH400_New_NonMockReturnsNilOnError(t *testing.T) {
-	devices.Mock(false)
+	devices.SetMock(false)
 	v := New("vh400fail", 99)
-	if v != nil {
-		t.Errorf("Expected nil when ADS1115.Pin fails, got non-nil")
-	}
-	devices.Mock(true)
+	err := v.Open()
+	assert.Error(t, err)
+	devices.SetMock(true)
 }
 
 func Test_vwc_CurveSegments(t *testing.T) {

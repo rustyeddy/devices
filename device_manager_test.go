@@ -1,219 +1,113 @@
 package devices
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 )
 
-// mockDevice implements the Name interface for testing
+// mockDevice implements the minimal interface expected by Device[T]
 type mockDevice struct {
-	name string
+	id   string
+	data any
+	kind Type
 }
 
-func (m *mockDevice) Name() string {
-	return m.name
+func (m *mockDevice) ID() string {
+	return m.id
 }
 
-func TestGetDeviceManager(t *testing.T) {
-	t.Run("singleton instance", func(t *testing.T) {
-		dm1 := GetDeviceManager()
-		dm2 := GetDeviceManager()
-
-		if dm1 == nil {
-			t.Fatal("GetDeviceManager() returned nil")
-		}
-		if dm2 == nil {
-			t.Fatal("GetDeviceManager() returned nil on second call")
-		}
-		if dm1 != dm2 {
-			t.Error("GetDeviceManager() returned different instances")
-		}
-	})
-
-	t.Run("initial state", func(t *testing.T) {
-		dm := GetDeviceManager()
-		if len(dm.devices) != 0 {
-			t.Errorf("new DeviceManager should have empty devices map, got %d devices", len(dm.devices))
-		}
-	})
+func (m *mockDevice) Type() Type {
+	return m.kind
 }
 
-func TestDeviceManager_Add(t *testing.T) {
-	tests := []struct {
-		name    string
-		device  Name
-		wantErr bool
-	}{
-		{
-			name:    "valid device",
-			device:  &mockDevice{name: "test1"},
-			wantErr: false,
-		},
-		{
-			name:    "nil device",
-			device:  nil,
-			wantErr: true,
-		},
-		{
-			name:    "duplicate name",
-			device:  &mockDevice{name: "test1"},
-			wantErr: false, // Should replace existing device
-		},
+func (m *mockDevice) Get() (any, error) {
+	return m.data, nil
+}
+
+func (m *mockDevice) Set(d any) error {
+	m.data = d
+	return nil
+}
+
+func (m *mockDevice) Open() error {
+	return nil
+}
+func (m *mockDevice) Close() error {
+	return nil
+}
+
+func TestNewDeviceManager_InitialState(t *testing.T) {
+	dm := NewDeviceManager()
+	if dm == nil {
+		t.Fatal("NewDeviceManager returned nil")
 	}
-
-	dm := GetDeviceManager()
-	dm.Clear() // Start with clean state
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := dm.Add(tt.device)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Add() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !tt.wantErr && tt.device != nil {
-				if got, exists := dm.Get(tt.device.Name()); !exists || got != tt.device {
-					t.Errorf("Add() failed to store device %s", tt.device.Name())
-				}
-			}
-		})
+	if dm.devices == nil {
+		t.Fatal("devices map should be initialized")
+	}
+	if len(dm.devices) != 0 {
+		t.Fatalf("expected empty devices map, got %d entries", len(dm.devices))
 	}
 }
 
-func TestDeviceManager_Get(t *testing.T) {
-	dm := GetDeviceManager()
-	dm.Clear()
+func TestAddAndGet(t *testing.T) {
+	dm := NewDeviceManager()
+	dev := &mockDevice{id: "dev1"}
 
-	device := &mockDevice{name: "test"}
-	dm.Add(device)
-
-	tests := []struct {
-		name       string
-		deviceName string
-		want       Name
-		wantExists bool
-	}{
-		{
-			name:       "existing device",
-			deviceName: "test",
-			want:       device,
-			wantExists: true,
-		},
-		{
-			name:       "non-existing device",
-			deviceName: "unknown",
-			want:       nil,
-			wantExists: false,
-		},
-		{
-			name:       "empty name",
-			deviceName: "",
-			want:       nil,
-			wantExists: false,
-		},
+	if err := dm.Add(dev); err != nil {
+		t.Fatalf("Add returned unexpected error: %v", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, exists := dm.Get(tt.deviceName)
-			if exists != tt.wantExists {
-				t.Errorf("Get() exists = %v, want %v", exists, tt.wantExists)
-			}
-			if got != tt.want {
-				t.Errorf("Get() got = %v, want %v", got, tt.want)
-			}
-		})
+	got, err := dm.Get("dev1")
+	if err != nil {
+		t.Fatalf("Get returned unexpected error: %v", err)
+	}
+	if got == nil {
+		t.Fatalf("expected non-nil device from Get, got nil")
+	}
+	if got.ID() != dev.ID() {
+		t.Fatalf("Get returned device with ID %q, want %q", got.ID(), dev.ID())
 	}
 }
 
-func TestDeviceManager_Remove(t *testing.T) {
-	dm := GetDeviceManager()
-	dm.Clear()
+func TestAddDuplicate(t *testing.T) {
+	dm := NewDeviceManager()
+	dev := &mockDevice{id: "dup1"}
 
-	device := &mockDevice{name: "test"}
-	dm.Add(device)
-
-	tests := []struct {
-		name       string
-		deviceName string
-		want       bool
-	}{
-		{
-			name:       "existing device",
-			deviceName: "test",
-			want:       true,
-		},
-		{
-			name:       "non-existing device",
-			deviceName: "unknown",
-			want:       false,
-		},
-		{
-			name:       "empty name",
-			deviceName: "",
-			want:       false,
-		},
+	if err := dm.Add(dev); err != nil {
+		t.Fatalf("first Add returned unexpected error: %v", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := dm.Remove(tt.deviceName); got != tt.want {
-				t.Errorf("Remove() = %v, want %v", got, tt.want)
-			}
-		})
+	if err := dm.Add(dev); err != ErrDeviceExists {
+		t.Fatalf("second Add on same name: got error %v, want ErrDeviceExists", err)
 	}
 }
 
-func TestDeviceManager_List(t *testing.T) {
-	dm := GetDeviceManager()
-	dm.Clear()
+func TestGet_NotFound(t *testing.T) {
+	dm := NewDeviceManager()
 
-	// Add some test devices
-	devices := []string{"dev1", "dev2", "dev3"}
-	for _, name := range devices {
-		dm.Add(&mockDevice{name: name})
-	}
-
-	got := dm.List()
-	if len(got) != len(devices) {
-		t.Errorf("List() returned %d devices, want %d", len(got), len(devices))
-	}
-
-	// Check all devices are in the list
-	for _, name := range devices {
-		found := false
-		for _, n := range got {
-			if n == name {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("List() missing device %s", name)
-		}
+	_, err := dm.Get("missing")
+	if err != ErrNotFound {
+		t.Fatalf("Get on missing device: got error %v, want ErrNotFound", err)
 	}
 }
 
-func TestDeviceManager_ConcurrentAccess(t *testing.T) {
-	dm := GetDeviceManager()
-	dm.Clear()
-
+func TestConcurrentAdds(t *testing.T) {
+	dm := NewDeviceManager()
 	var wg sync.WaitGroup
-	deviceCount := 100
+	count := 200
 
-	// Test concurrent adds
-	wg.Add(deviceCount)
-	for i := 0; i < deviceCount; i++ {
-		go func(id int) {
+	wg.Add(count)
+	for i := 0; i < count; i++ {
+		i := i
+		go func() {
 			defer wg.Done()
-			device := &mockDevice{name: fmt.Sprintf("dev%d", id)}
-			dm.Add(device)
-		}(i)
+			id := "concurrent-" + string(rune(i))
+			_ = dm.Add(&mockDevice{id: id})
+		}()
 	}
 	wg.Wait()
 
-	// Verify all devices were added
-	if len(dm.List()) != deviceCount {
-		t.Errorf("Expected %d devices after concurrent adds, got %d", deviceCount, len(dm.List()))
+	if len(dm.devices) != count {
+		t.Fatalf("after concurrent adds: got %d devices, want %d", len(dm.devices), count)
 	}
 }

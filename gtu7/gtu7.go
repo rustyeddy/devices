@@ -11,14 +11,15 @@ import (
 )
 
 type GTU7 struct {
-	*devices.Device
+	id string
 	*drivers.Serial
-	lastGPS GPS
+	lastGPS *GPS
 	scanner *bufio.Scanner
+	devices.Device[*GPS]
 }
 
-func NewGTU7(name string) *GTU7 {
-	devices.Mock(true)
+func New(name string) *GTU7 {
+	devices.SetMock(true)
 
 	s, err := drivers.NewSerial(name, 9600)
 	if err != nil {
@@ -26,19 +27,32 @@ func NewGTU7(name string) *GTU7 {
 		return nil
 	}
 	g := &GTU7{
-		Device: devices.NewDevice(name, "mqtt"),
+		id:     name,
 		Serial: s,
 	}
 	return g
 }
 
 func (g *GTU7) Open() error {
-	err := g.Device.Open()
+	err := g.Open()
 	if err != nil {
 		fmt.Printf("Failed to open serial port %s - %v\n", g.String(), err)
 		return err
 	}
 	return nil
+}
+
+func (g *GTU7) Get() (*GPS, error) {
+	return g.lastGPS, nil
+}
+
+func (g *GTU7) Set(gps *GPS) error {
+	g.lastGPS = gps
+	return nil
+}
+
+func (g *GTU7) Type() devices.Type {
+	return devices.TypeGPS
 }
 
 func (g *GTU7) OpenRead() error {
@@ -87,4 +101,8 @@ func (g *GTU7) startParser(parseQ chan string) chan *GPS {
 		close(gpsQ)
 	}()
 	return gpsQ
+}
+
+func (g *GTU7) String() string {
+	return g.id
 }
