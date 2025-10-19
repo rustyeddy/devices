@@ -14,13 +14,13 @@ import (
 // BME280 represents an I2C temperature, humidity and pressure sensor.
 // It defaults to address 0x77 and implements the device.Device interface.
 type BME280 struct {
-	*devices.Device
-
+	id     string
 	bus    string
 	addr   int
 	driver *bme280.Driver
 
-	MockReader func() (bme280.Response, error) // Function to mock reading data
+	devices.Device[*bme280.Response]
+	MockReader func() (*bme280.Response, error) // Function to mock reading data
 }
 
 type Env struct {
@@ -83,13 +83,21 @@ const (
 
 // Create a new BME280 at the give bus and address. Defaults are
 // typically /dev/i2c-1 address 0x99
-func New(name, bus string, addr int) *BME280 {
+func New(id, bus string, addr int) *BME280 {
 	b := &BME280{
-		Device: devices.NewDevice(name, "mqtt"),
-		bus:    bus,
-		addr:   addr,
+		id:   id,
+		bus:  bus,
+		addr: addr,
 	}
 	return b
+}
+
+func (b *BME280) ID() string {
+	return b.id
+}
+
+func (b *BME280) Type() devices.Type {
+	return devices.TypeBME280
 }
 
 // Init opens the i2c bus at the specified address and gets the device
@@ -121,14 +129,22 @@ func (b *BME280) Open() error {
 	return nil
 }
 
+func (b *BME280) Close() error {
+	return errors.New("TODO Need to implement bme280 close")
+}
+
 // Read one Response from the sensor. If this device is being mocked
 // we will make up some random floating point numbers between 0 and
 // 100.
-func (b *BME280) Read() (resp bme280.Response, err error) {
+func (b *BME280) Get() (resp *bme280.Response, err error) {
 	if devices.IsMock() {
 		resp, err = b.MockReader()
 	} else {
-		resp, err = b.driver.Read()
+		val, err := b.driver.Read()
+		if err != nil {
+			return nil, err
+		}
+		resp = &val
 
 	}
 	if err != nil {
@@ -154,8 +170,16 @@ func (b *BME280) Read() (resp bme280.Response, err error) {
 	return resp, err
 }
 
-func (b *BME280) MockRead() (bme280.Response, error) {
-	return bme280.Response{
+func (b *BME280) Set(v *bme280.Response) error {
+	return devices.ErrTypeNotImplemented
+}
+
+func (b *BME280) String() string {
+	return b.ID()
+}
+
+func (b *BME280) MockRead() (*bme280.Response, error) {
+	return &bme280.Response{
 		Temperature: 50.12,
 		Pressure:    900.34,
 		Humidity:    77.56,
