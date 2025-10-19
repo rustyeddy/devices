@@ -89,6 +89,7 @@ func New(id, bus string, addr int) *BME280 {
 		bus:  bus,
 		addr: addr,
 	}
+	b.Device = b
 	return b
 }
 

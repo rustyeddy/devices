@@ -38,7 +38,7 @@ type OLED struct {
 	Font       *basicfont.Face
 	Background *image1bit.VerticalLSB
 
-	devices.Device[*OLED]
+	devices.Device[any]
 
 	bus  string
 	addr int
@@ -57,6 +57,7 @@ func New(id string, width, height int) (*OLED, error) {
 		bus:    "/dev/i2c-1",
 		addr:   0x3c,
 	}
+	o.Device = o
 	o.Background = image1bit.NewVerticalLSB(image.Rect(0, 0, width, height))
 	if devices.IsMock() {
 		return o, nil

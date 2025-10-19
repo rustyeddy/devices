@@ -24,6 +24,7 @@ func New(id string, pin int) *LED {
 		id:  id,
 		pin: pin,
 	}
+	led.Device = led
 	return led
 }
 
@@ -31,6 +32,16 @@ func (l *LED) Open() error {
 	g := drivers.GetGPIO()
 	l.DigitalPin = g.Pin(l.id, l.pin, gpiocdev.AsOutput(0))
 	return nil
+}
+
+func (l *LED) Get() (int, error) {
+	v, err := l.DigitalPin.Get()
+	return v, err
+}
+
+func (l *LED) Set(v int) error {
+	err := l.DigitalPin.Set(v)
+	return err
 }
 
 func (l *LED) Close() error {

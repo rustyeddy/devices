@@ -1,10 +1,13 @@
 # SUBDIRS := data mesh messanger otto server station utils
 PIENV	= env GOOS=linux GOARCH=arm GOARM=7
 
-all: test $(SUBDIRS)
+all: test $(SUBDIRS) build
 
 init:
 	git update --init 
+
+build:
+	go build -v . 
 
 test:
 	rm -f cover.out

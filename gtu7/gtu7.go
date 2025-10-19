@@ -11,7 +11,6 @@ import (
 )
 
 type GTU7 struct {
-	id string
 	*drivers.Serial
 	lastGPS *GPS
 	scanner *bufio.Scanner
@@ -19,18 +18,20 @@ type GTU7 struct {
 }
 
 func New(name string) *GTU7 {
-	devices.SetMock(true)
-
 	s, err := drivers.NewSerial(name, 9600)
 	if err != nil {
 		slog.Error("GTU7 failed to open", "error", err)
 		return nil
 	}
 	g := &GTU7{
-		id:     name,
 		Serial: s,
 	}
+	g.Device = g
 	return g
+}
+
+func (g *GTU7) ID() string {
+	return g.Serial.PortName
 }
 
 func (g *GTU7) Open() error {
@@ -104,5 +105,5 @@ func (g *GTU7) startParser(parseQ chan string) chan *GPS {
 }
 
 func (g *GTU7) String() string {
-	return g.id
+	return g.ID()
 }

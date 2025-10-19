@@ -14,12 +14,13 @@ import (
 // edge). Low is open, high is closed.
 type Button struct {
 	*drivers.DigitalPin
+	devices.Device[int]
 }
 
 // New creates a new button with the given name, offset represents the
 // pin number and a series of line options. Todo reference the gpiodev
 // manual for LineReq options
-func New(name string, offset int, opts ...gpiocdev.LineReqOption) devices.Device[int] {
+func New(name string, offset int, opts ...gpiocdev.LineReqOption) *Button {
 	var evtQ chan gpiocdev.LineEvent
 	evtQ = make(chan gpiocdev.LineEvent)
 	bopts := []gpiocdev.LineReqOption{
@@ -37,6 +38,8 @@ func New(name string, offset int, opts ...gpiocdev.LineReqOption) devices.Device
 	b := &Button{
 		DigitalPin: drivers.NewDigitalPin(name, offset, bopts...),
 	}
+	b.Device = b
+
 	b.EvtQ = evtQ
 	return b
 }

@@ -15,7 +15,7 @@ type VH400 struct {
 	id  string
 	pin int
 	drivers.AnalogPin
-	devices.Device[*VH400]
+	devices.Device[float64]
 }
 
 func New(id string, pin int) *VH400 {
@@ -23,6 +23,7 @@ func New(id string, pin int) *VH400 {
 		id:  id,
 		pin: pin,
 	}
+	v.Device = v
 	return v
 }
 
@@ -40,6 +41,10 @@ func (v *VH400) Open() error {
 	}
 	v.AnalogPin = p
 	return nil
+}
+
+func (v *VH400) Close() error {
+	return v.AnalogPin.Close()
 }
 
 func (v *VH400) ID() string {
