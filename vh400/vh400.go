@@ -4,49 +4,64 @@ package vh400
 // For calculations on the VWC.  Borrowed from above website
 
 import (
+	"fmt"
 	"log"
-	"log/slog"
 
 	"github.com/rustyeddy/devices"
 	"github.com/rustyeddy/devices/drivers"
 )
 
 type VH400 struct {
-	*devices.Device
+	id  string
+	pin int
 	drivers.AnalogPin
+	devices.Device[*VH400]
 }
 
-func New(name string, pin int) *VH400 {
-	d := devices.NewDevice(name, "mqtt")
+func New(id string, pin int) *VH400 {
 	v := &VH400{
-		Device: d,
+		id:  id,
+		pin: pin,
 	}
-	if devices.IsMock() {
-		v.AnalogPin = drivers.NewMockAnalogPin(name, pin, nil)
-		return v
-	}
-
-	ads := drivers.GetADS1115()
-	p, err := ads.Pin(name, pin, nil)
-	if err != nil {
-		slog.Error("vh400.New", "name", name, "pin", pin, "error", err)
-		return nil
-	}
-	v.AnalogPin = p
 	return v
 }
 
-func (v *VH400) Name() string {
-	return v.Device.Name
+func (v *VH400) Open() error {
+	if devices.IsMock() {
+		v.AnalogPin = drivers.NewMockAnalogPin(v.id, v.pin, nil)
+		return nil
+	}
+
+	ads := drivers.GetADS1115()
+	p, err := ads.Pin(v.id, v.pin, nil)
+	if err != nil {
+		return fmt.Errorf("VH400 ERROR opening %s pin: %d - error: %s",
+			v.id, v.pin, err)
+	}
+	v.AnalogPin = p
+	return nil
 }
 
-func (v *VH400) Read() (float64, error) {
+func (v *VH400) ID() string {
+	return v.id
+}
+
+func (v *VH400) Get() (float64, error) {
 	volts, err := v.AnalogPin.Read()
 	if err != nil {
 		return volts, err
 	}
 	vwc := vwc(volts)
 	return vwc, nil
+
+}
+
+func (v *VH400) Set(val float64) error {
+	return devices.ErrNotImplemented
+}
+
+func (v *VH400) Type() devices.Type {
+	return devices.TypeFloat
 }
 
 /*

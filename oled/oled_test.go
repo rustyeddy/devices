@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	devices.Mock(true)
+	devices.SetMock(true)
 }
 
 func TestNewOLED_MockMode(t *testing.T) {
@@ -20,8 +20,7 @@ func TestNewOLED_MockMode(t *testing.T) {
 	assert.NotNil(t, oled)
 	assert.Equal(t, 128, oled.Width)
 	assert.Equal(t, 64, oled.Height)
-	assert.NotNil(t, oled.Device)
-	assert.Equal(t, "testoled", oled.Device.Name)
+	assert.Equal(t, "testoled", oled.ID())
 }
 
 func TestOLED_Clear_SetsAllBitsOff(t *testing.T) {

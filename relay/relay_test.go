@@ -4,30 +4,22 @@ import (
 	"testing"
 
 	"github.com/rustyeddy/devices"
+	"github.com/stretchr/testify/require"
 )
 
+func init() {
+	devices.SetMock(true)
+}
+
 func TestNewRelayInitializesFields(t *testing.T) {
-	devices.Mock(true)
 	relay := New("testrelay", 6)
-	if relay == nil {
-		t.Fatal("New() returned nil")
-	}
-	if relay.Device == nil {
-		t.Error("Device field not initialized")
-	}
-	if relay.DigitalPin == nil {
-		t.Error("DigitalPin field not initialized")
-	}
-	if relay.Device.Name != "testrelay" {
-		t.Errorf("Device name = %s, want testrelay", relay.Device.Name)
-	}
-	if relay.Device.Topic != "testrelay" {
-		t.Errorf("Device topic = %s, want mqtt", relay.Device.Topic)
-	}
+	require.NotNil(t, relay, "New() returned nil")
+	require.NotNil(t, relay.Device, "Device field not initialized")
+	require.NotNil(t, relay.DigitalPin, "DigitalPin field not initialized")
+	require.Equal(t, "testrelay", relay.ID())
 }
 
 func TestRelayCallbackOn(t *testing.T) {
-	devices.Mock(true)
 	relay := New("relay_on", 7)
 	called := false
 	relay.On = func() error {
@@ -42,7 +34,6 @@ func TestRelayCallbackOn(t *testing.T) {
 }
 
 func TestRelay_Callback_Off(t *testing.T) {
-	devices.Mock(true)
 	relay := New("relay_off", 8)
 	called := false
 	relay.On = func() error { return nil }
@@ -57,7 +48,6 @@ func TestRelay_Callback_Off(t *testing.T) {
 }
 
 func TestRelay_Callback_NoPanic(t *testing.T) {
-	devices.Mock(true)
 	relay := New("relay_nopanic", 9)
 	relay.On = func() error { return nil }
 	relay.Off = func() error { return nil }
@@ -71,7 +61,6 @@ func TestRelay_Callback_NoPanic(t *testing.T) {
 }
 
 func TestRelayCallbackDefaultBehavior(t *testing.T) {
-	devices.Mock(true)
 	relay := New("relay_default", 10)
 	// Use default On/Off methods from DigitalPin
 	relay.Callback(true)

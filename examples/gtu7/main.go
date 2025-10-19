@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	g := gtu7.NewGTU7("/dev/ttyS0")
+	g := gtu7.New("/dev/ttyS0")
 	gpsQ := g.StartReading()
 
 	for gps := range gpsQ {

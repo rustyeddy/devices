@@ -4,164 +4,54 @@
 // state and data periodically.
 package devices
 
-import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"log/slog"
-	"sync"
-	"time"
-)
+import "errors"
 
-// DeviceState represents the current operational state of a device
-type DeviceState string
+type Type uint8
 
 const (
-	StateUnknown      DeviceState = "unknown"
-	StateInitializing DeviceState = "initializing"
-	StateRunning      DeviceState = "running"
-	StateError        DeviceState = "error"
-	StateStopped      DeviceState = "stopped"
-	StateMocked       DeviceState = "mocked"
+	TypeBool Type = iota
+	TypeInt
+	TypeFloat
+	TypeAny
+	TypeBME280
+	TypeGPS
 )
 
-// Opener represents a device that can be opened and closed for communication.
-type Opener interface {
+type DeviceState uint8
+
+const (
+	StateUnknown DeviceState = iota
+	StateInitializing
+	StateRunning
+	StateError
+	StateStopped
+)
+
+var (
+	mocking           = false
+	ErrNotImplemented = errors.New("Method is not implemented")
+)
+
+// Device is a type-safe device contract for a single value type T.
+// Implementations may be read-only by returning an error from Set.
+
+type Device[T any] interface {
+	ID() string
+	Type() Type
 	Open() error
 	Close() error
+
+	Get() (T, error)
+	Set(v T) error
+
+	// String() String
+	// JSON() string
 }
 
-// OnOff represents a device that can be turned on and off.
-type OnOff interface {
-	On() error
-	Off() error
+func SetMock(v bool) {
+	mocking = v
 }
 
-// Name represents a device that has a human-readable name.
-type Name interface {
-	Name() string
-}
-
-// mockConfig handles mock device configuration with thread safety
-type mockConfig struct {
-	enabled bool
-	mu      sync.RWMutex
-}
-
-var mockCfg = &mockConfig{}
-
-// Mock enables or disables mock device behavior
-func Mock(mocking bool) {
-	mockCfg.mu.Lock()
-	defer mockCfg.mu.Unlock()
-	mockCfg.enabled = mocking
-}
-
-// IsMock returns the current mock state
 func IsMock() bool {
-	mockCfg.mu.RLock()
-	defer mockCfg.mu.RUnlock()
-	return mockCfg.enabled
-}
-
-// Device represents a physical or virtual device with messaging capabilities
-type Device struct {
-	Name   string        // Human readable device name
-	State  DeviceState   // Current device state
-	Period time.Duration // Period for timed operations
-	Val    any           // Mock value storage
-	Topic  string        // The topic to advertise and subscribe to
-
-	err    error        // Last error encountered (use SetError to set)
-	mu     sync.RWMutex // Protects device state
-	Opener              // Device opening interface
-
-	Get func() (int, error)
-}
-
-// SetError sets the device error and updates the state to StateError
-func (d *Device) SetError(err error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.err = err
-	if err != nil {
-		d.State = StateError
-	}
-}
-
-// ErrorVal returns the last error encountered by the device
-func (d *Device) Error() error {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.err
-}
-
-// NewDevice creates a new device with the given name
-func NewDevice(name string, topic string) *Device {
-	return &Device{
-		Name:  name,
-		Topic: topic,
-		State: StateUnknown,
-	}
-}
-
-// TimerLoop runs periodic operations with context support
-func (d *Device) TimerLoop(ctx context.Context, period time.Duration, readpub func() error) error {
-	if period <= 0 {
-		return fmt.Errorf("invalid period: %v", period)
-	}
-
-	d.Period = period
-	d.State = StateRunning
-
-	ticker := time.NewTicker(period)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			d.State = StateStopped
-			return ctx.Err()
-		case <-ticker.C:
-			if err := readpub(); err != nil {
-				slog.Error("TimerLoop failed",
-					"device", d.Name,
-					"error", err)
-				d.err = err
-			}
-		}
-	}
-}
-
-// String returns the device name
-func (d *Device) String() string {
-	return d.Name + " (" + string(d.State) + ")"
-}
-
-// JSON returns a JSON representation of the device
-func (d *Device) JSON() ([]byte, error) {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
-	j := struct {
-		Name   string
-		State  DeviceState
-		Period time.Duration
-		Error  string
-	}{
-		Name:   d.Name,
-		State:  d.State,
-		Period: d.Period,
-		Error:  errString(d.err),
-	}
-
-	return json.Marshal(j)
-}
-
-// errString safely converts an error to a string
-func errString(err error) string {
-	if err != nil {
-		return err.Error()
-	}
-	return ""
+	return mocking
 }

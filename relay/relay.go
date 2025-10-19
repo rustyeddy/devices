@@ -7,17 +7,37 @@ import (
 )
 
 type Relay struct {
-	*devices.Device
 	*drivers.DigitalPin
+	devices.Device[int]
 }
 
 func New(name string, offset int) *Relay {
-	relay := &Relay{
-		Device: devices.NewDevice(name, name),
-	}
+	relay := &Relay{}
 	g := drivers.GetGPIO()
 	relay.DigitalPin = g.Pin(name, offset, gpiocdev.AsOutput(0))
+	relay.Device = relay
 	return relay
+}
+
+func (r *Relay) ID() string {
+	return r.DigitalPin.ID()
+}
+
+func (r *Relay) Open() error {
+	return nil
+}
+
+func (r *Relay) Close() error {
+	return nil
+}
+
+func (r *Relay) Get() (int, error) {
+	v, err := r.DigitalPin.Get()
+	return v, err
+}
+
+func (r *Relay) Set(v int) error {
+	return r.DigitalPin.Set(v)
 }
 
 func (r *Relay) Callback(val bool) {

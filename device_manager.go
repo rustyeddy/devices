@@ -1,87 +1,53 @@
 package devices
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 )
 
-// DeviceManager handles the registration and retrieval of devices.
-// It ensures thread-safe access to the device collection.
-type DeviceManager struct {
-	devices map[string]Name `json:"devices"`
-	mu      sync.RWMutex    `json:"-"`
-}
-
 var (
-	stationName string = "station"
-	devices     *DeviceManager
-	once        sync.Once
+	ErrNotFound           = errors.New("device not found")
+	ErrDeviceExists       = errors.New("device already exists")
+	ErrTypeMismatch       = errors.New("device registered with different type")
+	ErrTypeNotImplemented = errors.New("method not implemented")
 )
 
-// GetDeviceManager returns the singleton instance of DeviceManager.
-// It ensures thread-safe initialization and access to the device manager.
-func GetDeviceManager() *DeviceManager {
-	once.Do(func() {
-		devices = &DeviceManager{
-			devices: make(map[string]Name),
-		}
-	})
-	return devices
+type DeviceManager struct {
+	mu sync.RWMutex
+	// Heterogeneous registry: store typed Device[T] values behind `any`.
+	devices map[string]Device[any]
+	// Optional deps you may add:
+	// log   Logger
+	// bus   Bus
+	// cfg   Config
 }
 
-// Add registers a new device with the manager.
-// If a device with the same name exists, it will be replaced.
-func (dm *DeviceManager) Add(d Name) error {
-	if d == nil {
-		return fmt.Errorf("cannot add nil device")
+func NewDeviceManager() *DeviceManager {
+	return &DeviceManager{
+		devices: make(map[string]Device[any]),
 	}
-
-	dm.mu.Lock()
-	defer dm.mu.Unlock()
-
-	dm.devices[d.Name()] = d
-	return nil
 }
 
-// Get retrieves a device by name.
-// Returns the device and true if found, nil and false otherwise.
-func (dm *DeviceManager) Get(name string) (Name, bool) {
-	dm.mu.RLock()
-	defer dm.mu.RUnlock()
+// Register a typed device. Fails if name already used with a different T.
+func (m *DeviceManager) Add(d Device[any]) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
-	d, exists := dm.devices[name]
-	return d, exists
-}
-
-// Remove removes a device from the manager.
-// Returns true if the device was removed, false if it didn't exist.
-func (dm *DeviceManager) Remove(name string) bool {
-	dm.mu.Lock()
-	defer dm.mu.Unlock()
-
-	if _, exists := dm.devices[name]; exists {
-		delete(dm.devices, name)
-		return true
+	name := d.ID()
+	if _, exists := m.devices[name]; !exists {
+		m.devices[name] = d
+		return nil
 	}
-	return false
+	return ErrDeviceExists
 }
 
-// List returns a slice of all registered device names.
-func (dm *DeviceManager) List() []string {
-	dm.mu.RLock()
-	defer dm.mu.RUnlock()
+func (m *DeviceManager) Get(name string) (Device[any], error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 
-	names := make([]string, 0, len(dm.devices))
-	for name := range dm.devices {
-		names = append(names, name)
+	d, ok := m.devices[name]
+	if !ok {
+		return nil, ErrNotFound
 	}
-	return names
-}
-
-// Clear removes all devices from the manager.
-func (dm *DeviceManager) Clear() {
-	dm.mu.Lock()
-	defer dm.mu.Unlock()
-
-	dm.devices = make(map[string]Name)
+	return d, nil
 }

@@ -10,6 +10,8 @@ import (
 type Serial struct {
 	PortName string
 	Baud     int
+
+	*serial.Mode
 	serial.Port
 	mock bool
 }
@@ -34,6 +36,10 @@ func GetSerial(port string) *Serial {
 	return s
 }
 
+func (s *Serial) ID() string {
+	return s.PortName
+}
+
 func NewSerial(port string, baud int) (s *Serial, err error) {
 	s = &Serial{
 		PortName: port,
@@ -43,78 +49,18 @@ func NewSerial(port string, baud int) (s *Serial, err error) {
 	if devices.IsMock() {
 		return s, nil
 	}
-
-	mode := &serial.Mode{
+	s.Mode = &serial.Mode{
 		BaudRate: baud,
 	}
-	s.Port, err = serial.Open(port, mode)
-	if err != nil {
-		return nil, err
-	}
-	serialPorts[port] = s
 	return s, nil
 }
 
-// func NewSerial(name string, port string, opts any) *Device {
-// 	sp := GetSerial(name, port, opts)
-// 	err := sp.Open()
-// 	return sp
-// }
+func (s *Serial) Open() (err error) {
+	s.Port, err = serial.Open(s.PortName, s.Mode)
+	if err != nil {
+		return err
+	}
 
-// type SerialDevice interface {
-// 	Device
-// 	Open() error
-// 	PortName() string
-// 	SerialReader
-// 	SerialWriter
-// }
-
-// type SerialWriter interface {
-// 	io.Reader
-// }
-
-// type SerialReader interface {
-// 	io.Writer
-// }
-
-// type Closer interface {
-// 	Close() error
-// }
-
-// func NewSerialDevice(name string, port string, opts any) SerialDevice {
-// 	if mock {
-// 		return GetSerialMock(name)
-// 	}
-// 	return GetSerialPort(name, port, opts)
-// }
-
-// type SerialMock struct {
-// 	*BaseDevice
-// 	portName string
-// }
-
-// func GetSerialMock(name string) *SerialMock {
-// 	return &SerialMock{
-// 		BaseDevice: NewDevice(name),
-// 	}
-// }
-
-// func (d *SerialMock) Open() error {
-// 	return nil
-// }
-
-// func (d *SerialMock) Read([]byte) (n int, err error) {
-// 	return n, err
-// }
-
-// func (d *SerialMock) Write([]byte) (n int, err error) {
-// 	return n, err
-// }
-
-// func (d *SerialMock) Close() error {
-// 	return nil
-// }
-
-// func (d *SerialMock) PortName() string {
-// 	return d.portName
-// }
+	serialPorts[s.ID()] = s
+	return nil
+}

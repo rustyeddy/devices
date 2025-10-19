@@ -6,9 +6,9 @@ toggle mode.
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/rustyeddy/devices/led"
@@ -27,6 +27,7 @@ func init() {
 	flag.StringVar(&mock, "mock", "", "mock gpio and/or mqtt")
 }
 
+// TODO add a timerloop to this device (from otto)
 func main() {
 	flag.Parse()
 
@@ -45,9 +46,22 @@ func initLED(name string, pin int) (*led.LED, chan any) {
 
 func dotimer(led *led.LED, period time.Duration, done chan any) {
 	count = 0
-	led.TimerLoop(context.TODO(), period, func() error {
-		// led.Set(count % 2)
-		count++
-		return nil
-	})
+	// led.TimerLoop(context.TODO(), period, func() error {
+	// 	count++
+	// 	return nil
+	// })
+	ticker := time.NewTicker(1 * time.Second)
+	go func() {
+		for {
+			select {
+			case t := <-ticker.C:
+				count++
+				slog.Info("led blink at ", "time", t, "count", count)
+
+			case <-done:
+				break
+			}
+		}
+	}()
+
 }
