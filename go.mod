@@ -5,7 +5,6 @@ go 1.25.1
 require (
 	github.com/maciej/bme280 v0.2.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
-	github.com/rustyeddy/otto-devices v0.0.0-20250928165712-dd8e55596e8a
 	github.com/stretchr/testify v1.9.0
 	github.com/warthog618/go-gpiocdev v0.9.1
 	go.bug.st/serial v1.6.4
