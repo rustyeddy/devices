@@ -34,7 +34,7 @@ func New(name string) *GTU7 {
 }
 
 func (g *GTU7) Open() error {
-	err := g.Open()
+	err := g.Serial.Open()
 	if err != nil {
 		fmt.Printf("Failed to open serial port %s - %v\n", g.String(), err)
 		return err

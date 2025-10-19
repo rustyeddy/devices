@@ -7,7 +7,7 @@ import (
 
 var (
 	ErrNotFound           = errors.New("device not found")
-	ErrDeviceExists       = errors.New("device already")
+	ErrDeviceExists       = errors.New("device already exists")
 	ErrTypeMismatch       = errors.New("device registered with different type")
 	ErrTypeNotImplemented = errors.New("method not implemented")
 )

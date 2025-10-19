@@ -1,6 +1,7 @@
 package devices
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 )
@@ -101,7 +102,7 @@ func TestConcurrentAdds(t *testing.T) {
 		i := i
 		go func() {
 			defer wg.Done()
-			id := "concurrent-" + string(rune(i))
+			id := fmt.Sprintf("concurrent-%d", i)
 			_ = dm.Add(&mockDevice{id: id})
 		}()
 	}
