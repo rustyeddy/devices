@@ -1,6 +1,6 @@
 module github.com/rustyeddy/devices
 
-go 1.25.1
+go 1.24.5
 
 require (
 	github.com/maciej/bme280 v0.2.0

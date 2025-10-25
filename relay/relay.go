@@ -40,6 +40,18 @@ func (r *Relay) Set(v int) error {
 	return r.DigitalPin.Set(v)
 }
 
+func (r *Relay) Type() devices.Type {
+	return devices.TypeInt
+}
+
+func (r *Relay) On() error {
+	return r.DigitalPin.ON()
+}
+
+func (r *Relay) Off() error {
+	return r.DigitalPin.OFF()
+}
+
 func (r *Relay) Callback(val bool) {
 	switch val {
 	case false:
