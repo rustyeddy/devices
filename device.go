@@ -43,9 +43,6 @@ type Device[T any] interface {
 
 	Get() (T, error)
 	Set(v T) error
-
-	// String() String
-	// JSON() string
 }
 
 func SetMock(v bool) {
