@@ -1,3 +1,5 @@
+//go:build linux
+
 package button
 
 import (
@@ -15,6 +17,7 @@ import (
 type Button struct {
 	*drivers.DigitalPin
 	devices.Device[int]
+	EvtQ chan gpiocdev.LineEvent
 }
 
 // New creates a new button with the given name, offset represents the

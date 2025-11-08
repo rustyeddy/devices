@@ -1,3 +1,5 @@
+//go:build linux
+
 /*
 Relay sets up pin 6 for a Relay (or LED) and connects to an MQTT
 broker waiting for instructions to turn on or off the relay.
