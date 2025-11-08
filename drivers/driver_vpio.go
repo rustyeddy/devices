@@ -17,6 +17,7 @@ gpiocdev.WithPullUp
 
 import (
 	"errors"
+	"time"
 )
 
 type Direction uint
@@ -46,8 +47,17 @@ type VPin[T Value] struct {
 	value		T
 }
 
+type Transaction[T Value] struct {
+	index	uint
+	value	T
+	time.Time
+}
+
 type VPIO[T Value] struct {
 	pins	[PIN_COUNT]VPin[T]
+
+	recording bool
+	transactions []*Transaction[T]
 }
 
 func NewVPIO[T Value]() *VPIO[T] {
@@ -70,6 +80,16 @@ func (v *VPIO[T]) Set(i uint, val T) error {
 		return ErrOutOfRange
 	}
 	v.pins[i].value = val
+
+	if v.recording {
+		trans := &Transaction[T]{
+			index: i,
+			value: val,
+			Time: time.Now(),
+		}
+		v.transactions = append(v.transactions, trans)
+	}
+
 	return nil
 }
 
@@ -81,5 +101,6 @@ func (v *VPIO[T]) Get(i uint) (T, error) {
 	return v.pins[i].value, nil
 }
 
-
-
+func (v *VPIO[T]) Record() {
+	
+}

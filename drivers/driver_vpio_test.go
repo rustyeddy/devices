@@ -111,5 +111,46 @@ func TestVPIOFloat(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, val, pin.val)
 	}
+}
 
+func TestVPIONoTransactions(t *testing.T) {
+	v := NewVPIO[float64]()
+	v.Pin("output", 0, DirectionInput)
+	v.Pin("input", 1, DirectionOutput)
+	v.recording = false
+
+	val := 1.2
+	for i := 0; i < 2; i++ {
+		val += float64(i)
+		var j uint
+		for j = 0; j < 2; j++ {
+			err := v.Set(j, val)
+			assert.NoError(t, err)
+			value, err := v.Get(j)
+			assert.NoError(t, err)
+			assert.Equal(t, val, value)
+		}
+	}
+
+	assert.Equal(t, 0, len(v.transactions))
+}
+
+func TestVPIOTransactions(t *testing.T) {
+	v := NewVPIO[float64]()
+	v.Pin("output", 0, DirectionInput)
+	v.Pin("input", 1, DirectionOutput)
+	v.recording = true
+
+	val := 1.2
+	for i := 0; i < 20; i++ {
+		val += float64(i)
+		var j uint
+		for j = 0; j < 2; j++ {
+			err := v.Set(j, val)
+			assert.NoError(t, err)
+			value, err := v.Get(j)
+			assert.NoError(t, err)
+			assert.Equal(t, val, value)
+		}
+	}
 }
