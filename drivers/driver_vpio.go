@@ -27,36 +27,67 @@ type Value interface {
 }
 
 const (
-	DirectionNone	= iota
+	DirectionNone = iota
 	DirectionInput
 	DirectionOutput
 )
 
 var (
-	ErrOutOfRange = errors.New("pin out of range")
+	ErrOutOfRange    = errors.New("pin out of range")
 	ErrPinIsAnOutput = errors.New("can not set an output pin")
 )
 
 // PIN_COUNT provides the number of pins per VPIO bank
-const PIN_COUNT	= 64
+const PIN_COUNT = 64
 
 type VPin[T Value] struct {
-	id			string
-	index		uint
-	direction	Direction
-	value		T
+	id        string
+	index     uint
+	direction Direction
+	value     T
+}
+
+// ID returns the pin identifier
+func (p *VPin[T]) ID() string {
+	return p.id
+}
+
+// Index returns the pin index
+func (p *VPin[T]) Index() int {
+	return int(p.index)
+}
+
+// Direction returns the pin direction
+func (p *VPin[T]) Direction() Direction {
+	return p.direction
+}
+
+// Get returns the current value of the pin
+func (p *VPin[T]) Get() (T, error) {
+	return p.value, nil
+}
+
+// Set sets the value of the pin
+func (p *VPin[T]) Set(val T) error {
+	if p.direction != DirectionOutput {
+		var zero T
+		p.value = zero
+		return ErrPinIsAnOutput
+	}
+	p.value = val
+	return nil
 }
 
 type Transaction[T Value] struct {
-	index	uint
-	value	T
+	index uint
+	value T
 	time.Time
 }
 
 type VPIO[T Value] struct {
-	pins	[PIN_COUNT]VPin[T]
+	pins [PIN_COUNT]VPin[T]
 
-	recording bool
+	recording    bool
 	transactions []*Transaction[T]
 }
 
@@ -65,18 +96,17 @@ func NewVPIO[T Value]() *VPIO[T] {
 }
 
 func (v *VPIO[T]) Pin(id string, i uint, dir Direction) (*VPin[T], error) {
-	if i > PIN_COUNT {
+	if i >= PIN_COUNT {
 		return nil, ErrOutOfRange
 	}
-	p := v.pins[i]
-	p.id = id
-	p.index = i
-	p.direction = dir
-	return &p, nil
+	v.pins[i].id = id
+	v.pins[i].index = i
+	v.pins[i].direction = dir
+	return &v.pins[i], nil
 }
 
 func (v *VPIO[T]) Set(i uint, val T) error {
-	if i > PIN_COUNT {
+	if i >= PIN_COUNT {
 		return ErrOutOfRange
 	}
 	v.pins[i].value = val
@@ -85,7 +115,7 @@ func (v *VPIO[T]) Set(i uint, val T) error {
 		trans := &Transaction[T]{
 			index: i,
 			value: val,
-			Time: time.Now(),
+			Time:  time.Now(),
 		}
 		v.transactions = append(v.transactions, trans)
 	}
@@ -94,13 +124,31 @@ func (v *VPIO[T]) Set(i uint, val T) error {
 }
 
 func (v *VPIO[T]) Get(i uint) (T, error) {
-	if i > PIN_COUNT {
-		return v.pins[i].value, ErrOutOfRange
+	var zero T
+	if i >= PIN_COUNT {
+		return zero, ErrOutOfRange
 	}
 	// OK to get the value of an input pin
 	return v.pins[i].value, nil
 }
 
-func (v *VPIO[T]) Record() {
-	
+// StartRecording enables transaction recording
+func (v *VPIO[T]) StartRecording() {
+	v.recording = true
+	v.transactions = make([]*Transaction[T], 0)
+}
+
+// StopRecording disables transaction recording
+func (v *VPIO[T]) StopRecording() {
+	v.recording = false
+}
+
+// GetTransactions returns all recorded transactions
+func (v *VPIO[T]) GetTransactions() []*Transaction[T] {
+	return v.transactions
+}
+
+// ClearTransactions removes all recorded transactions
+func (v *VPIO[T]) ClearTransactions() {
+	v.transactions = make([]*Transaction[T], 0)
 }

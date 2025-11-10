@@ -4,7 +4,7 @@ type PinOptions uint
 type EventType  uint
 
 type GPIO[T any] interface {
-	Pin(name string, pin int, options PinOptions)
+	Pin(name string, pin int, options PinOptions) (*Pin[T], error)
 	Get() T
 	Set(v T)
 
