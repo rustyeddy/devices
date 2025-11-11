@@ -28,8 +28,9 @@ const (
 )
 
 var (
-	mocking           = false
-	ErrNotImplemented = errors.New("Method is not implemented")
+	mocking               = false
+	ErrNotImplemented     = errors.New("Method is not implemented")
+	ErrTypeNotImplemented = errors.New("Type is not implemented")
 )
 
 // Device is a type-safe device contract for a single value type T.

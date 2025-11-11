@@ -28,18 +28,20 @@ var gpioStr = `
 `
 
 func main() {
-	var g drivers.GPIO
+	var g *drivers.GPIOCDev
 	if err := json.Unmarshal([]byte(gpioStr), &g); err != nil {
 		slog.Error(err.Error())
 		return
 	}
 
 	defer func() {
-		g.Close()
+		if g != nil {
+			g.Close()
+		}
 	}()
 
 	// TODO
-	// led := g.pins[6]
+	// led, _ := g.Pin("led", 6, drivers.PinOutput)
 	// for {
 	// 	led.Toggle()
 	// 	time.Sleep(1 * time.Second)

@@ -152,3 +152,8 @@ func (v *VPIO[T]) GetTransactions() []*Transaction[T] {
 func (v *VPIO[T]) ClearTransactions() {
 	v.transactions = make([]*Transaction[T], 0)
 }
+
+// Close releases VPIO resources (no-op for virtual GPIO)
+func (v *VPIO[T]) Close() error {
+	return nil
+}

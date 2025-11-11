@@ -21,36 +21,30 @@ func TestNewRelayInitializesFields(t *testing.T) {
 
 func TestRelayCallbackOn(t *testing.T) {
 	relay := New("relay_on", 7)
-	called := false
-	relay.On = func() error {
-		called = true
-		return nil
-	}
-	relay.Off = func() error { return nil }
 	relay.Callback(true)
-	if !called {
-		t.Error("On should be called when Callback(true)")
+	val, err := relay.Get()
+	if err != nil {
+		t.Fatalf("relay.Get() got error %v", err)
+	}
+	if val != 1 {
+		t.Error("On should set value to 1 when Callback(true)")
 	}
 }
 
 func TestRelay_Callback_Off(t *testing.T) {
 	relay := New("relay_off", 8)
-	called := false
-	relay.On = func() error { return nil }
-	relay.Off = func() error {
-		called = true
-		return nil
-	}
 	relay.Callback(false)
-	if !called {
-		t.Error("Off should be called when Callback(false)")
+	val, err := relay.Get()
+	if err != nil {
+		t.Fatalf("relay.Get() got error %v", err)
+	}
+	if val != 0 {
+		t.Error("Off should set value to 0 when Callback(false)")
 	}
 }
 
 func TestRelay_Callback_NoPanic(t *testing.T) {
 	relay := New("relay_nopanic", 9)
-	relay.On = func() error { return nil }
-	relay.Off = func() error { return nil }
 	defer func() {
 		if r := recover(); r != nil {
 			t.Errorf("Callback panicked: %v", r)
@@ -64,17 +58,17 @@ func TestRelayCallbackDefaultBehavior(t *testing.T) {
 	relay := New("relay_default", 10)
 	// Use default On/Off methods from DigitalPin
 	relay.Callback(true)
-	v, err := relay.Value()
+	v, err := relay.Get()
 	if err != nil {
-		t.Fatalf("relay.Value() got error %v", err)
+		t.Fatalf("relay.Get() got error %v", err)
 	}
 	if v != 1 {
 		t.Errorf("relay expected (1) got (%d)", v)
 	}
 	relay.Callback(false)
-	v, err = relay.Value()
+	v, err = relay.Get()
 	if err != nil {
-		t.Fatalf("relay.Value() got error %v", err)
+		t.Fatalf("relay.Get() got error %v", err)
 	}
 	if v != 0 {
 		t.Errorf("relay expected (0) got (%d)", v)
