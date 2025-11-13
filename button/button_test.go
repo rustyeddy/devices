@@ -11,7 +11,8 @@ import (
 func init() {
 	devices.SetMock(true)
 }
-func TestNewButton_DefaultOptions(t *testing.T) {
+
+func TestNewButtonDefaultOptions(t *testing.T) {
 	btn, err := New("testbtn", 5, drivers.PinPullDown)
 	assert.NoError(t, err)
 	assert.NotNil(t, btn)

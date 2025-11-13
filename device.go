@@ -19,6 +19,7 @@ const (
 	TypeBytes
 	TypeJSON
 	TypeAny
+	TypeGPS
 )
 
 type DeviceState uint8
@@ -40,7 +41,7 @@ var (
 // Device is a type-safe device contract for a single value type T.
 // Implementations may be read-only by returning an error from Set.
 type Device[T any] interface {
-	ID() string
+	Name() string
 	Type() Type
 	Open() error
 	Close() error
@@ -78,7 +79,7 @@ func (d *DeviceBase[T]) Close() error {
 	return ErrTypeNotImplemented
 }
 
-func (d *DeviceBase[T]) ID() string {
+func (d *DeviceBase[T]) Name() string {
 	return d.name
 }
 
@@ -96,6 +97,6 @@ func (d *DeviceBase[T]) Set(v T) error {
 }
 
 func (d *DeviceBase[T]) String() string {
-	return fmt.Sprintf("%s [%d]", d.ID(), d.devtype)
+	return fmt.Sprintf("%s [%d]", d.Name(), d.devtype)
 }
 

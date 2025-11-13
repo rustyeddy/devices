@@ -1,10 +1,29 @@
 package led
 
-// import (
-// 	"github.com/rustyeddy/devices"
-// 	"github.com/rustyeddy/devices/drivers"
-// 	"github.com/warthog618/go-gpiocdev"
-// )
+import (
+	"github.com/rustyeddy/devices"
+	"github.com/rustyeddy/devices/drivers"
+
+)
+
+type LED struct {
+	drivers.Pin[bool]
+	*devices.DeviceBase[bool]
+}
+
+func New(name string, index int, opts ...drivers.PinOptions) (*LED, error) {
+	gpio := drivers.GetGPIO[bool]()
+	p, err := gpio.SetPin(name, index, drivers.PinOutput)
+	if err != nil {
+		return nil, err
+	}
+	b := &LED{
+		DeviceBase: devices.NewDeviceBase[bool](name),
+		Pin: p,
+	}
+	return b, nil
+}
+
 
 // type LED struct {
 // 	devices.DeviceBase[bool]

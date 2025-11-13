@@ -20,7 +20,7 @@ func TestNewOLED_MockMode(t *testing.T) {
 	assert.NotNil(t, oled)
 	assert.Equal(t, 128, oled.Width)
 	assert.Equal(t, 64, oled.Height)
-	assert.Equal(t, "testoled", oled.ID())
+	assert.Equal(t, "testoled", oled.Name())
 }
 
 func TestOLED_Clear_SetsAllBitsOff(t *testing.T) {

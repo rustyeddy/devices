@@ -31,14 +31,13 @@ const (
 )
 
 type OLED struct {
-	id         string
 	Dev        *ssd1306.Dev
 	Height     int
 	Width      int
 	Font       *basicfont.Face
 	Background *image1bit.VerticalLSB
 
-	// devices.Device[OLED]
+	*devices.DeviceBase[OLED]
 
 	bus  string
 	addr int
@@ -49,28 +48,20 @@ func NewDevice(id string) (devices.Device[any], error) {
 	return o, err
 }
 
-func New(id string, width, height int) (*OLED, error) {
+func New(name string, width, height int) (*OLED, error) {
 	o := &OLED{
-		id:     id,
 		Height: height,
 		Width:  width,
 		bus:    "/dev/i2c-1",
 		addr:   0x3c,
 	}
-	o.Device = o
+	o.DeviceBase = devices.NewDeviceBase[OLED](name)
+
 	o.Background = image1bit.NewVerticalLSB(image.Rect(0, 0, width, height))
 	if devices.IsMock() {
 		return o, nil
 	}
 	return o, nil
-}
-
-func (o *OLED) ID() string {
-	return o.id
-}
-
-func (o *OLED) Type() devices.Type {
-	return devices.TypeAny
 }
 
 func (o *OLED) Open() error {
@@ -108,11 +99,11 @@ func (d *OLED) Clear() {
 	d.Rectangle(0, 0, d.Width, d.Height, Off)
 }
 
-func (d *OLED) Get() (devices.Value, error) {
+func (d *OLED) Get() (any, error) {
 	return nil, devices.ErrNotImplemented
 }
 
-func (d *OLED) Set(v devices.Value) error {
+func (d *OLED) Set(v any) error {
 
 	// what to do with set?
 	return nil
