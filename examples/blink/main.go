@@ -39,7 +39,10 @@ func main() {
 }
 
 func initLED(name string, pin int) (*led.LED, chan any) {
-	led := led.New(name, pin)
+	led, err := led.New(name, pin)
+	if err != nil {
+		panic(err)
+	}
 	done := make(chan any)
 	return led, done
 }

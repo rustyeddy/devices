@@ -51,8 +51,8 @@ func TestBME280Creation(t *testing.T) {
 				t.Fatal("Failed to create BME280 device")
 			}
 
-			if bme.ID() != tt.devName {
-				t.Errorf("Name() = %v, want %v", bme.ID(), tt.devName)
+			if bme.Name() != tt.devName {
+				t.Errorf("Name() = %v, want %v", bme.Name(), tt.devName)
 			}
 
 			err := bme.Open()
@@ -170,7 +170,7 @@ func TestBME280String(t *testing.T) {
 	bme := New("bme-test", "/dev/i2c-fake", 0x76)
 	str := bme.String()
 	require.NotEmpty(t, str)
-	expected := bme.ID() + " [0]"
+	expected := bme.Name() + " [0]"
 	assert.Equal(t, expected, str)
 }
 
@@ -366,7 +366,7 @@ func TestBME280FieldInitialization(t *testing.T) {
 		assert.NotNil(t, bme.driver)
 	}
 
-	assert.Equal(t, "test-device", bme.ID(), "Device name = %s, want test-device", bme.ID())
+	assert.Equal(t, "test-device", bme.Name(), "Device name = %s, want test-device", bme.ID())
 	assert.Equal(t, "/dev/i2c-2", bme.bus)
 	assert.Equal(t, 0x76, bme.addr)
 }

@@ -17,7 +17,7 @@ func TestNewButtonDefaultOptions(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, btn)
 	assert.NotNil(t, btn.Pin)
-	assert.Equal(t, "testbtn", btn.DeviceBase.ID())
+	assert.Equal(t, "testbtn", btn.DeviceBase.Name())
 }
 
 func TestNewButtonCustomOptions(t *testing.T) {

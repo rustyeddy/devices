@@ -1,12 +1,12 @@
 package main
 
-// import "github.com/rustyeddy/devices/button"
-// import "github.com/rustyeddy/devices/led"
-//import "github.com/rustyeddy/devices/relay"
+import "github.com/rustyeddy/devices/button"
+import "github.com/rustyeddy/devices/led"
+import "github.com/rustyeddy/devices/relay"
 
 import "github.com/rustyeddy/devices/drivers"
 import "github.com/rustyeddy/devices/vh400"
-import "github.com/rustyeddy/devices/bme280"
+import "github.com/rustyeddy/devices/env"
 import "github.com/rustyeddy/devices"
 
 type controller struct {
@@ -86,7 +86,7 @@ func (c controller) Stop() {
 
 // LEDs are straight GPIO Outputs that accepts false/0 == off,
 // true/1 == on 
-func ledInit() (*devices.LED, *devices.LED) {
+func ledInit() (*led.LED, *led.LED) {
 	green := digital.Pin("green", 8, drivers.PinOptionOutput)
 	green.Subscribe("green", func(val bool) {
 		green.Set(val)

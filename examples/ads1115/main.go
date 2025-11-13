@@ -15,7 +15,7 @@ const (
 
 func main() {
 	ads := drivers.NewADS1115("ADS1115", "/dev/i2c-1", 0x48)
-	ads.Init()
+	ads.Open()
 
 	var err error
 	var pins [4]drivers.AnalogPin
