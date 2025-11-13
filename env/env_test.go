@@ -1,4 +1,4 @@
-package bme280
+package env
 
 import (
 	"testing"
@@ -170,7 +170,7 @@ func TestBME280String(t *testing.T) {
 	bme := New("bme-test", "/dev/i2c-fake", 0x76)
 	str := bme.String()
 	require.NotEmpty(t, str)
-	expected := bme.ID()
+	expected := bme.ID() + " [0]"
 	assert.Equal(t, expected, str)
 }
 
@@ -252,14 +252,14 @@ func TestBME280CustomMockReader(t *testing.T) {
 	bme := New("bme-test", "/dev/i2c-fake", 0x76)
 
 	// Set a custom mock reader
-	customTemp := 25.5
-	customPressure := 1013.25
-	customHumidity := 60.0
+	customTemp := 50.12
+	customPressure := 900.34
+	customHumidity := 77.56
 
 	oldreader := bme.MockReader
 	defer func() { bme.MockReader = oldreader }()
-	bme.MockReader = func() (*bme280.Response, error) {
-		return &bme280.Response{
+	bme.MockReader = func() (*Env, error) {
+		return &Env{
 			Temperature: customTemp,
 			Pressure:    customPressure,
 			Humidity:    customHumidity,
@@ -272,7 +272,7 @@ func TestBME280CustomMockReader(t *testing.T) {
 
 	resp, err := bme.Get()
 	require.NoError(t, err)
-	require.NotEqual(t, &bme280.Response{}, resp)
+	require.NotEqual(t, &Env{}, resp)
 	assert.Equal(t, resp.Temperature, customTemp)
 	assert.Equal(t, resp.Pressure, customPressure)
 	assert.Equal(t, resp.Humidity, customHumidity)
@@ -343,8 +343,8 @@ func TestBME280ResponseValidation(t *testing.T) {
 	// Test with out-of-range values
 	oldreader := bme.MockReader
 	defer func() { bme.MockReader = oldreader }()
-	bme.MockReader = func() (*bme280.Response, error) {
-		return &bme280.Response{
+	bme.MockReader = func() (*Env, error) {
+		return &Env{
 			Temperature: -39.0, // Below minTemperature
 			Pressure:    200.0, // Below minPressure
 			Humidity:    110.0, // Above maxHumidity
@@ -362,7 +362,7 @@ func TestBME280FieldInitialization(t *testing.T) {
 	require.NoError(t, err)
 
 	if !device.IsMock() {
-		assert.NotNil(t, bme.Device, "Device field not initialized")
+		assert.NotNil(t, bme.DeviceBase, "Device field not initialized")
 		assert.NotNil(t, bme.driver)
 	}
 
