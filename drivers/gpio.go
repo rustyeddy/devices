@@ -1,10 +1,10 @@
 package drivers
 
-type PinOptions uint
-type EventType uint
+type PinOptions int
+type EventType int
 
 type GPIO[T any] interface {
-	Pin(name string, pin int, options PinOptions) (Pin[T], error)
+	SetPin(name string, pin int, options PinOptions) (Pin[T], error)
 	Get(pin int) (T, error)
 	Set(pin int, v T) error
 	Close() error
@@ -13,9 +13,13 @@ type GPIO[T any] interface {
 type Pin[T any] interface {
 	ID() string
 	Index() int
-	Direction() Direction
+	Options() PinOptions
 	Get() (T, error)
 	Set(v T) error
+}
+
+type Value interface {
+	~int | ~float64 | ~bool
 }
 
 // Singleton instances for supported types
@@ -52,8 +56,12 @@ func GetGPIO[T Value]() GPIO[T] {
 		
 	default:
 		// For other Value types, create a new VPIO instance (not cached)
-		return NewVPIOAdapter[T]()
+		return NewVPIO[T]()
 	}
+}
+
+func createGPIO[T Value]() GPIO[T] {
+	return NewVPIO[T]()
 }
 
 // ResetGPIO clears all singleton instances (useful for testing)
@@ -62,3 +70,7 @@ func ResetGPIO() {
 	gpioInt = nil
 	gpioFloat64 = nil
 }
+
+// DigitalPin
+type DigitalPin Pin[bool]
+type AnalogPin	Pin[float64]

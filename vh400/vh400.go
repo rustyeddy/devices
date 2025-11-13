@@ -12,47 +12,37 @@ import (
 )
 
 type VH400 struct {
-	id  string
-	pin int
-	drivers.AnalogPin
 	devices.Device[float64]
 }
 
 func New(id string, pin int) *VH400 {
-	v := &VH400{
-		id:  id,
-		pin: pin,
-	}
-	v.Device = v
+	v := &VH400{}
+	v.Device = devices.NewDeviceBase[float64](id, pin)
+
 	return v
 }
 
 func (v *VH400) Open() error {
-	if devices.IsMock() {
-		v.AnalogPin = drivers.NewMockAnalogPin(v.id, v.pin, nil)
-		return nil
-	}
-
+	v.Open()
 	ads := drivers.GetADS1115()
-	p, err := ads.Pin(v.id, v.pin, nil)
+	_, err := ads.Pin(v.ID(), v.Index(), nil)
 	if err != nil {
 		return fmt.Errorf("VH400 ERROR opening %s pin: %d - error: %s",
-			v.id, v.pin, err)
+			v.ID(), v.Index(), err)
 	}
-	v.AnalogPin = p
 	return nil
 }
 
 func (v *VH400) Close() error {
-	return v.AnalogPin.Close()
+	return v.Close()
 }
 
 func (v *VH400) ID() string {
-	return v.id
+	return v.Device.ID()
 }
 
 func (v *VH400) Get() (float64, error) {
-	volts, err := v.AnalogPin.Read()
+	volts, err := v.Get()
 	if err != nil {
 		return volts, err
 	}

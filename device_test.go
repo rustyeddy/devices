@@ -54,7 +54,7 @@ type readOnlyDevice[T any] struct {
 }
 
 func (d *readOnlyDevice[T]) ID() string { return d.id }
-func (d *readOnlyDevice[T]) Type() Type { return TypeBME280 } // arbitrary
+func (d *readOnlyDevice[T]) Type() Type { return TypeAny } // arbitrary
 func (d *readOnlyDevice[T]) Get() (T, error) {
 	return d.val, nil
 }

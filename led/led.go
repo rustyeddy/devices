@@ -1,68 +1,55 @@
 package led
 
-import (
-	"errors"
+// import (
+// 	"github.com/rustyeddy/devices"
+// 	"github.com/rustyeddy/devices/drivers"
+// 	"github.com/warthog618/go-gpiocdev"
+// )
 
-	"github.com/rustyeddy/devices"
-	"github.com/rustyeddy/devices/drivers"
-	"github.com/warthog618/go-gpiocdev"
-)
+// type LED struct {
+// 	devices.DeviceBase[bool]
+// }
 
-type LED struct {
-	id  string
-	pin int
+// func New(id string, pin int) *LED {
+// 	led := devices.Pin(id, pin)
+// 	return led
+// }
 
-	On  func()
-	Off func()
+// func (l *LED) Open() error {
+// 	g := drivers.GetGPIO()
+// 	l.DigitalPin = g.Pin(l.id, l.pin, gpiocdev.AsOutput(0))
+// 	return nil
+// }
 
-	*drivers.DigitalPin
-	devices.Device[int]
-}
+// func (l *LED) Get() (int, error) {
+// 	v, err := l.DigitalPin.Get()
+// 	return v, err
+// }
 
-func New(id string, pin int) *LED {
-	led := &LED{
-		id:  id,
-		pin: pin,
-	}
-	led.Device = led
-	return led
-}
+// func (l *LED) Set(v int) error {
+// 	err := l.DigitalPin.Set(v)
+// 	return err
+// }
 
-func (l *LED) Open() error {
-	g := drivers.GetGPIO()
-	l.DigitalPin = g.Pin(l.id, l.pin, gpiocdev.AsOutput(0))
-	return nil
-}
+// func (l *LED) Close() error {
+// 	return errors.New("TODO Need to implement LED close")
+// }
 
-func (l *LED) Get() (int, error) {
-	v, err := l.DigitalPin.Get()
-	return v, err
-}
+// func (l *LED) ID() string {
+// 	return l.id
+// }
 
-func (l *LED) Set(v int) error {
-	err := l.DigitalPin.Set(v)
-	return err
-}
+// func (l *LED) Type() devices.Type {
+// 	return devices.TypeInt
+// }
 
-func (l *LED) Close() error {
-	return errors.New("TODO Need to implement LED close")
-}
+// func (l *LED) Callback(val bool) {
+// 	switch val {
+// 	case false:
+// 		l.Off()
 
-func (l *LED) ID() string {
-	return l.id
-}
-
-func (l *LED) Type() devices.Type {
-	return devices.TypeInt
-}
-
-func (l *LED) Callback(val bool) {
-	switch val {
-	case false:
-		l.Off()
-
-	case true:
-		l.On()
-	}
-	return
-}
+// 	case true:
+// 		l.On()
+// 	}
+// 	return
+// }

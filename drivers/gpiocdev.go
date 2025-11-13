@@ -22,8 +22,8 @@ type GPIOCDev struct {
 type GPIOCDevPin struct {
 	id        string
 	index     int
-	direction Direction
 	line      *gpiocdev.Line
+	options	  PinOptions
 	opts      []gpiocdev.LineReqOption
 	value     int
 	evtQ      chan gpiocdev.LineEvent
@@ -43,7 +43,7 @@ func NewGPIOCDev(chipname string) *GPIOCDev {
 }
 
 // Pin initializes and returns a GPIO pin
-func (g *GPIOCDev) Pin(name string, pinIndex int, options PinOptions) (*GPIOCDevPin, error) {
+func (g *GPIOCDev) SetPin(name string, pinIndex int, options PinOptions) (*GPIOCDevPin, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -51,12 +51,11 @@ func (g *GPIOCDev) Pin(name string, pinIndex int, options PinOptions) (*GPIOCDev
 		return existing, nil
 	}
 
-	opts, dir := pinOptionsToGPIOCDev(options)
+	opts := pinOptionsToGPIOCDev(options)
 
 	pin := &GPIOCDevPin{
 		id:        name,
 		index:     pinIndex,
-		direction: dir,
 		opts:      opts,
 		evtQ:      make(chan gpiocdev.LineEvent, 10),
 	}
@@ -68,7 +67,7 @@ func (g *GPIOCDev) Pin(name string, pinIndex int, options PinOptions) (*GPIOCDev
 	pin.line = line
 	g.pins[pinIndex] = pin
 
-	slog.Info("GPIO pin initialized", "name", name, "index", pinIndex, "direction", dir)
+	slog.Info("GPIO pin initialized", "name", name, "index", pinIndex)
 	return pin, nil
 }
 
@@ -121,8 +120,8 @@ func (p *GPIOCDevPin) Index() int {
 }
 
 // Direction returns the pin direction
-func (p *GPIOCDevPin) Direction() Direction {
-	return p.direction
+func (p *GPIOCDevPin) Options() PinOptions  {
+	return p.options
 }
 
 // Get reads the current value of the pin
@@ -150,10 +149,6 @@ func (p *GPIOCDevPin) Set(value int) error {
 
 	if p.line == nil {
 		return fmt.Errorf("pin %d not initialized", p.index)
-	}
-
-	if p.direction != DirectionOutput {
-		return fmt.Errorf("cannot set value on input pin %d", p.index)
 	}
 
 	if err := p.line.SetValue(value); err != nil {
@@ -244,9 +239,8 @@ func (p *GPIOCDevPin) Close() error {
 }
 
 // pinOptionsToGPIOCDev converts PinOptions to gpiocdev options
-func pinOptionsToGPIOCDev(options PinOptions) ([]gpiocdev.LineReqOption, Direction) {
+func pinOptionsToGPIOCDev(options PinOptions) ([]gpiocdev.LineReqOption) {
 	var opts []gpiocdev.LineReqOption
-	var dir Direction = DirectionNone
 
 	const (
 		PinInput       PinOptions = 1 << 0
@@ -266,10 +260,8 @@ func pinOptionsToGPIOCDev(options PinOptions) ([]gpiocdev.LineReqOption, Directi
 		} else {
 			opts = append(opts, gpiocdev.AsOutput(0))
 		}
-		dir = DirectionOutput
 	} else if options&PinInput != 0 {
 		opts = append(opts, gpiocdev.AsInput)
-		dir = DirectionInput
 	}
 
 	if options&PinPullUp != 0 {
@@ -290,11 +282,11 @@ func pinOptionsToGPIOCDev(options PinOptions) ([]gpiocdev.LineReqOption, Directi
 		}
 	}
 
-	if dir == DirectionInput && (options&(PinRisingEdge|PinFallingEdge|PinBothEdges)) != 0 {
+	if (options&(PinRisingEdge|PinFallingEdge|PinBothEdges) != 0) {
 		opts = append(opts, gpiocdev.WithDebounce(10*time.Millisecond))
 	}
 
-	return opts, dir
+	return opts
 }
 
 var eventHandler = func(evt gpiocdev.LineEvent) {

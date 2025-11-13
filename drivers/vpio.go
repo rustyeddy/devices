@@ -20,18 +20,6 @@ import (
 	"time"
 )
 
-type Direction uint
-
-type Value interface {
-	~int | ~float64 | ~bool
-}
-
-const (
-	DirectionNone = iota
-	DirectionInput
-	DirectionOutput
-)
-
 var (
 	ErrOutOfRange    = errors.New("pin out of range")
 	ErrPinIsAnOutput = errors.New("can not set an output pin")
@@ -42,8 +30,8 @@ const PIN_COUNT = 64
 
 type VPin[T Value] struct {
 	id        string
-	index     uint
-	direction Direction
+	index     int
+	options   PinOptions
 	value     T
 }
 
@@ -58,8 +46,8 @@ func (p *VPin[T]) Index() int {
 }
 
 // Direction returns the pin direction
-func (p *VPin[T]) Direction() Direction {
-	return p.direction
+func (p *VPin[T]) Options() PinOptions {
+	return p.options
 }
 
 // Get returns the current value of the pin
@@ -69,24 +57,23 @@ func (p *VPin[T]) Get() (T, error) {
 
 // Set sets the value of the pin
 func (p *VPin[T]) Set(val T) error {
-	if p.direction != DirectionOutput {
-		var zero T
-		p.value = zero
-		return ErrPinIsAnOutput
-	}
+	// if p.direction != DirectionOutput {
+	// 	var zero T
+	// 	p.value = zero
+	// 	return ErrPinIsAnOutput
+	// }
 	p.value = val
 	return nil
 }
 
 type Transaction[T Value] struct {
-	index uint
+	index int
 	value T
 	time.Time
 }
 
 type VPIO[T Value] struct {
-	pins [PIN_COUNT]VPin[T]
-
+	pins[PIN_COUNT]VPin[T]
 	recording    bool
 	transactions []*Transaction[T]
 }
@@ -95,17 +82,17 @@ func NewVPIO[T Value]() *VPIO[T] {
 	return &VPIO[T]{}
 }
 
-func (v *VPIO[T]) Pin(id string, i uint, dir Direction) (*VPin[T], error) {
+func (v *VPIO[T]) SetPin(id string, i int, opts PinOptions) (Pin[T], error) {
 	if i >= PIN_COUNT {
 		return nil, ErrOutOfRange
 	}
 	v.pins[i].id = id
 	v.pins[i].index = i
-	v.pins[i].direction = dir
+	v.pins[i].options = opts
 	return &v.pins[i], nil
 }
 
-func (v *VPIO[T]) Set(i uint, val T) error {
+func (v *VPIO[T]) Set(i int, val T) error {
 	if i >= PIN_COUNT {
 		return ErrOutOfRange
 	}
@@ -123,7 +110,7 @@ func (v *VPIO[T]) Set(i uint, val T) error {
 	return nil
 }
 
-func (v *VPIO[T]) Get(i uint) (T, error) {
+func (v *VPIO[T]) Get(i int) (T, error) {
 	var zero T
 	if i >= PIN_COUNT {
 		return zero, ErrOutOfRange

@@ -2,13 +2,14 @@
 
 package drivers
 
+/*
 import "github.com/rustyeddy/devices"
 
 // createGPIO creates a GPIO instance based on the mock setting.
 // On Linux, returns GPIOCDev for real hardware unless mocking is enabled.
 func createGPIO[T Value]() GPIO[T] {
 	if devices.IsMock() {
-		return NewVPIOAdapter[T]()
+		return NewVPIO[T]()
 	}
 	
 	// For Linux hardware, we need to use GPIOCDev wrapped to match the interface
@@ -20,7 +21,7 @@ func createGPIO[T Value]() GPIO[T] {
 		return any(newGPIOCDevAdapter()).(GPIO[T])
 	default:
 		// For bool and float64, use VPIO
-		return NewVPIOAdapter[T]()
+		return NewVPIO[T]()
 	}
 }
 
@@ -63,3 +64,5 @@ func (p *GPIOCDevPinAdapter) Get() (int, error) {
 func (p *GPIOCDevPinAdapter) Set(v int) error {
 	return p.GPIOCDevPin.Set(v)
 }
+
+*/

@@ -38,7 +38,7 @@ type OLED struct {
 	Font       *basicfont.Face
 	Background *image1bit.VerticalLSB
 
-	devices.Device[any]
+	// devices.Device[OLED]
 
 	bus  string
 	addr int
@@ -108,11 +108,11 @@ func (d *OLED) Clear() {
 	d.Rectangle(0, 0, d.Width, d.Height, Off)
 }
 
-func (d *OLED) Get() (any, error) {
+func (d *OLED) Get() (devices.Value, error) {
 	return nil, devices.ErrNotImplemented
 }
 
-func (d *OLED) Set(v any) error {
+func (d *OLED) Set(v devices.Value) error {
 
 	// what to do with set?
 	return nil
