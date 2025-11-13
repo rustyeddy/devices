@@ -4,24 +4,25 @@ import (
 	"testing"
 
 	"github.com/rustyeddy/devices"
+	"github.com/rustyeddy/devices/drivers"
 	"github.com/stretchr/testify/assert"
-	"github.com/warthog618/go-gpiocdev"
 )
 
 func init() {
 	devices.SetMock(true)
 }
 func TestNewButton_DefaultOptions(t *testing.T) {
-	btn := New("testbtn", 5)
-
+	btn, err := New("testbtn", 5, drivers.PinPullDown)
+	assert.NoError(t, err)
 	assert.NotNil(t, btn)
-	assert.NotNil(t, btn.DigitalPin)
-	assert.Equal(t, "testbtn", btn.ID())
+	assert.NotNil(t, btn.Pin)
+	assert.Equal(t, "testbtn", btn.DeviceBase.ID())
 }
 
-func TestNewButton_CustomOptions(t *testing.T) {
-	opt := gpiocdev.WithPullDown
-	btn := New("custombtn", 7, opt)
+func TestNewButtonCustomOptions(t *testing.T) {
+	// opt := gpiocdev.WithPullDown
+	btn, err := New("custombtn", 7, drivers.PinPullDown)
+	assert.NoError(t, err)
 	assert.NotNil(t, btn)
-	assert.NotNil(t, btn.DigitalPin)
+	assert.NotNil(t, btn.Pin)
 }

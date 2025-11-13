@@ -27,7 +27,6 @@ type BME280 struct {
 	MockReader func() (*Env, error) // Function to mock reading data
 }
 
-
 var (
 	ErrInitFailed    = errors.New("failed to initialize BME280")
 	ErrReadFailed    = errors.New("failed to read from BME280")

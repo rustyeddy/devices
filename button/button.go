@@ -1,15 +1,28 @@
 package button
 
-// type Button struct {
-// 	*devices.DeviceBase
-// }
+import (
+	"github.com/rustyeddy/devices"
+	"github.com/rustyeddy/devices/drivers"
 
-// func New(name string, index int) *Button {
-// 	return &Button{
-// 		name:  name,
-// 		index: index,
-// 	}
-// }
+)
+
+type Button struct {
+	drivers.Pin[bool]
+	*devices.DeviceBase[bool]
+}
+
+func New(name string, index int, opts ...drivers.PinOptions) (*Button, error) {
+	gpio := drivers.GetGPIO[bool]()
+	p, err := gpio.SetPin(name, index, drivers.PinInput)
+	if err != nil {
+		return nil, err
+	}
+	b := &Button{
+		DeviceBase: devices.NewDeviceBase[bool](name),
+		Pin: p,
+	}
+	return b, nil
+}
 
 // func (b *Button) Name() string {
 // 	return b.name
