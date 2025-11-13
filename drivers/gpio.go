@@ -1,12 +1,27 @@
 package drivers
 
 type PinOptions int
+
+const (
+	PinInput       PinOptions = 1 << 0
+	PinOutput      PinOptions = 1 << 1
+	PinOutputLow   PinOptions = 1 << 2
+	PinOutputHigh  PinOptions = 1 << 3
+	PinPullUp      PinOptions = 1 << 4
+	PinPullDown    PinOptions = 1 << 5
+	PinRisingEdge  PinOptions = 1 << 6
+	PinFallingEdge PinOptions = 1 << 7
+	PinBothEdges   PinOptions = 1 << 8
+)
+
+
 type EventType int
 
 type GPIO[T any] interface {
 	SetPin(name string, pin int, options PinOptions) (Pin[T], error)
 	Get(pin int) (T, error)
 	Set(pin int, v T) error
+	Open() error
 	Close() error
 }
 

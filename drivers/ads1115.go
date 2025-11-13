@@ -1,3 +1,5 @@
+//go:build linux
+
 package drivers
 
 import (
@@ -29,10 +31,6 @@ var (
 	ads1115 *ADS1115
 )
 
-func sample2Volts(val int64) float64 {
-	return float64(val) / (1000 * 1000 * 1000)
-}
-
 // GetADS1115 will return the default ads1115 struct singleton. The
 // first time GetADS1115 is called it will create a new device.
 // Subsequent calls will return the global variable.
@@ -52,12 +50,12 @@ func NewADS1115(name string, bus string, addr int) *ADS1115 {
 		return a
 	}
 
-	a.Init()
+	a.Open()
 	return a
 }
 
 // Init prepares the chip for usage
-func (a *ADS1115) Init() (err error) {
+func (a *ADS1115) Open() (err error) {
 	// Make sure periph is initialized.
 	if _, err := host.Init(); err != nil {
 		log.Printf("device_ads1115: host init failed: %s", err)
@@ -80,8 +78,19 @@ func (a *ADS1115) Init() (err error) {
 	return nil
 }
 
+// Close the ads1115 and shutdown all the pins
+func (a *ADS1115) Close() error {
+	a.bus.Close()
+	for i := 0; i < 4; i++ {
+		if a.pins[i] != nil {
+			a.pins[i].Close()
+		}
+	}
+	return nil
+}
+
 // Pin allocates and prepares one of the ads1115 pins (0 - 3) for use.
-func (a *ADS1115) Pin(name string, ch int, opts any) (pin *ADS1115Pin, err error) {
+func (a *ADS1115) SetPin(name string, ch int, opts any) (pin *ADS1115Pin, err error) {
 	// Obtain an analog pin from the ADC.
 	if ch < 0 || ch > 3 {
 		return pin, fmt.Errorf("PinInit Invalid channel %d", ch)
@@ -107,37 +116,30 @@ func (a *ADS1115) Pin(name string, ch int, opts any) (pin *ADS1115Pin, err error
 	return pin, err
 }
 
-// Close the ads1115 and shutdown all the pins
-func (a *ADS1115) Close() error {
-	a.bus.Close()
-	for i := 0; i < 4; i++ {
-		if a.pins[i] != nil {
-			a.pins[i].Close()
-		}
-	}
-	return nil
-}
-
-// String returns a string. Clean code!
-func (a *ADS1115) String() string {
-	return "ADS1115 todo write string function"
-}
-
-// JSON returns JSON more clean!
-func (a *ADS1115) JSON() []byte {
-	panic("write ads1115 JSON function")
-	return nil
-}
-
 // ADS1115Pin is an analog analagous to a digital pin
 type ADS1115Pin struct {
-	name string
+	name	string
+	index	int
 	ads1x15.PinADC
 }
 
+func (a ADS1115Pin) Open() error {
+	return nil
+}
+
+// Close the pin and set it back to it's defaults. TODO
+// set the pin back to its defaults
+func (a ADS1115Pin) Close() error {
+	return a.Halt()
+}
+
 // Name is what we call this pin
-func (p *ADS1115Pin) Name() string {
+func (p *ADS1115Pin) ID() string {
 	return p.name
+}
+
+func (p *ADS1115Pin) Index() int {
+	return p.index
 }
 
 // String is written text to hopefully drop some old eyeball style of
@@ -147,7 +149,7 @@ func (p *ADS1115Pin) String() string {
 }
 
 // Read returns a single float64 reading from the pin
-func (p ADS1115Pin) Read() (float64, error) {
+func (p ADS1115Pin) Get() (float64, error) {
 	reading, err := p.PinADC.Read()
 	if err != nil {
 		return 0.0, err
@@ -181,8 +183,6 @@ func (p ADS1115Pin) ReadContinuous() <-chan float64 {
 	return floatQ
 }
 
-// Close the pin and set it back to it's defaults. TODO
-// set the pin back to its defaults
-func (a ADS1115Pin) Close() error {
-	return a.Halt()
+func sample2Volts(val int64) float64 {
+	return float64(val) / (1000 * 1000 * 1000)
 }

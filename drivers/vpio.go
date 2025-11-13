@@ -35,6 +35,15 @@ type VPin[T Value] struct {
 	value     T
 }
 
+func (v *VPIO[T]) Open() error {
+	return nil
+}
+
+// Close releases VPIO resources (no-op for virtual GPIO)
+func (v *VPIO[T]) Close() error {
+	return nil
+}
+
 // ID returns the pin identifier
 func (p *VPin[T]) ID() string {
 	return p.id
@@ -140,7 +149,3 @@ func (v *VPIO[T]) ClearTransactions() {
 	v.transactions = make([]*Transaction[T], 0)
 }
 
-// Close releases VPIO resources (no-op for virtual GPIO)
-func (v *VPIO[T]) Close() error {
-	return nil
-}

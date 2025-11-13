@@ -9,26 +9,26 @@ import (
 func TestVPIOBool(t *testing.T) {
 	pins := []struct{
 		id string
-		index uint
-		dir Direction
+		index int
+		dir PinOptions
 		val bool
 		err error
 	} {
-		{ id: "input", index: 1, val: true,  dir: DirectionInput, err: nil},
-			{ id: "output", index: 2, val: false, dir: DirectionOutput, err: nil },
-			{ id: "bad-index", index: 75, val: false, dir: DirectionOutput, err: ErrOutOfRange },
+		{ id: "input", index: 1, val: true,  dir: PinInput, err: nil},
+			{ id: "output", index: 2, val: false, dir: PinOutput, err: nil },
+			{ id: "bad-index", index: 75, val: false, dir: PinOutput, err: ErrOutOfRange },
 	}
 
 	v := NewVPIO[bool]()
 	for _, pin := range pins {
-		p, err := v.Pin(pin.id, pin.index, pin.dir)
+		p, err := v.SetPin(pin.id, pin.index, pin.dir)
 		assert.Equal(t, err, pin.err)
 		if err == ErrOutOfRange {
 			continue
 		}
 
-		assert.Equal(t, p.id, pin.id)
-		assert.Equal(t, p.index, pin.index)
+		assert.Equal(t, p.ID(), pin.id)
+		assert.Equal(t, p.Index(), pin.index)
 		if err != nil {
 			continue
 		}
@@ -45,26 +45,26 @@ func TestVPIOBool(t *testing.T) {
 func TestVPIOInt(t *testing.T) {
 	pins := []struct{
 		id string
-		index uint
-		dir Direction
+		index int
+		dir PinOptions
 		val int
 		err error
 	} {
-		{ id: "input", index: 1, val: 10,  dir: DirectionInput, err: nil},
-		{ id: "output", index: 2, val: 20, dir: DirectionOutput, err: nil },
-		{ id: "bad-index", index: 75, val: -1, dir: DirectionOutput, err: ErrOutOfRange },
+		{ id: "input", index: 1, val: 10,  dir: PinInput, err: nil},
+		{ id: "output", index: 2, val: 20, dir: PinOutput, err: nil },
+		{ id: "bad-index", index: 75, val: -1, dir: PinOutput, err: ErrOutOfRange },
 	}
 
 	v := NewVPIO[int]()
 	for _, pin := range pins {
-		p, err := v.Pin(pin.id, pin.index, pin.dir)
+		p, err := v.SetPin(pin.id, pin.index, pin.dir)
 		assert.Equal(t, err, pin.err)
 		if err == ErrOutOfRange {
 			continue
 		}
 
-		assert.Equal(t, p.id, pin.id)
-		assert.Equal(t, p.index, pin.index)
+		assert.Equal(t, p.ID(), pin.id)
+		assert.Equal(t, p.Index(), pin.index)
 		if err != nil {
 			continue
 		}
@@ -81,26 +81,26 @@ func TestVPIOInt(t *testing.T) {
 func TestVPIOFloat(t *testing.T) {
 	pins := []struct{
 		id string
-		index uint
-		dir Direction
+		index int
+		dir PinOptions
 		val float64
 		err error
 	} {
-		{ id: "input", index: 1, val: 1.1,  dir: DirectionInput, err: nil},
-		{ id: "output", index: 2, val: 1.2, dir: DirectionOutput, err: nil },
-		{ id: "bad-index", index: 75, val: -1.0, dir: DirectionOutput, err: ErrOutOfRange },
+		{ id: "input", index: 1, val: 1.1,  dir: PinInput, err: nil},
+		{ id: "output", index: 2, val: 1.2, dir: PinOutput, err: nil },
+		{ id: "bad-index", index: 75, val: -1.0, dir: PinOutput, err: ErrOutOfRange },
 	}
 
 	v := NewVPIO[float64]()
 	for _, pin := range pins {
-		p, err := v.Pin(pin.id, pin.index, pin.dir)
+		p, err := v.SetPin(pin.id, pin.index, pin.dir)
 		assert.Equal(t, err, pin.err)
 		if err == ErrOutOfRange {
 			continue
 		}
 
-		assert.Equal(t, p.id, pin.id)
-		assert.Equal(t, p.index, pin.index)
+		assert.Equal(t, p.ID(), pin.id)
+		assert.Equal(t, p.Index(), pin.index)
 		if err != nil {
 			continue
 		}
@@ -115,14 +115,14 @@ func TestVPIOFloat(t *testing.T) {
 
 func TestVPIONoTransactions(t *testing.T) {
 	v := NewVPIO[float64]()
-	v.Pin("output", 0, DirectionInput)
-	v.Pin("input", 1, DirectionOutput)
+	v.SetPin("output", 0, PinInput)
+	v.SetPin("input", 1, PinOutput)
 	v.recording = false
 
 	val := 1.2
 	for i := 0; i < 2; i++ {
 		val += float64(i)
-		var j uint
+		var j int
 		for j = 0; j < 2; j++ {
 			err := v.Set(j, val)
 			assert.NoError(t, err)
@@ -137,14 +137,14 @@ func TestVPIONoTransactions(t *testing.T) {
 
 func TestVPIOTransactions(t *testing.T) {
 	v := NewVPIO[float64]()
-	v.Pin("output", 0, DirectionInput)
-	v.Pin("input", 1, DirectionOutput)
+	v.SetPin("output", 0, PinInput)
+	v.SetPin("input", 1, PinOutput)
 	v.recording = true
 
 	val := 1.2
 	for i := 0; i < 20; i++ {
 		val += float64(i)
-		var j uint
+		var j int
 		for j = 0; j < 2; j++ {
 			err := v.Set(j, val)
 			assert.NoError(t, err)

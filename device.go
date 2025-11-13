@@ -68,6 +68,14 @@ func NewDeviceBase[T any](name string, index int) *DeviceBase[T] {
 	}
 }
 
+func (d *DeviceBase[T]) Open() error {
+	return ErrTypeNotImplemented
+}
+
+func (d *DeviceBase[T]) Close() error {
+	return ErrTypeNotImplemented
+}
+
 func (d *DeviceBase[T]) ID() string {
 	return d.name
 }
@@ -78,14 +86,6 @@ func (d *DeviceBase[T]) Index() int {
 
 func (d *DeviceBase[T]) Type() Type {
 	return d.devtype
-}
-
-func (d *DeviceBase[T]) Open() error {
-	return ErrTypeNotImplemented
-}
-
-func (d *DeviceBase[T]) Close() error {
-	return ErrTypeNotImplemented
 }
 
 func (d *DeviceBase[T]) Get() (T, error) {

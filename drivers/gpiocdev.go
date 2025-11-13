@@ -30,6 +30,18 @@ type GPIOCDevPin struct {
 	mu        sync.RWMutex
 }
 
+var (
+	gpio_cdev *GPIOCDev
+)
+
+// GetGPIOCdev treats the GPIOCdev device as a singleton
+func GetGPIOCdev() *GPIOCDev {
+	if gpio_cdev == nil {
+		gpio_cdev = NewGPIOCDev("gpiochip0")
+	}
+	return gpio_cdev
+}
+
 // NewGPIOCDev creates a new GPIOCDev instance
 // chipname should be "gpiochip0" for Raspberry Pi Zero or "gpiochip4" for Raspberry Pi 5
 func NewGPIOCDev(chipname string) *GPIOCDev {
@@ -40,6 +52,10 @@ func NewGPIOCDev(chipname string) *GPIOCDev {
 		Chipname: chipname,
 		pins:     make(map[int]*GPIOCDevPin),
 	}
+}
+
+func (g *GPIOCDev) Open() error {
+	return nil
 }
 
 // Pin initializes and returns a GPIO pin
@@ -241,18 +257,6 @@ func (p *GPIOCDevPin) Close() error {
 // pinOptionsToGPIOCDev converts PinOptions to gpiocdev options
 func pinOptionsToGPIOCDev(options PinOptions) ([]gpiocdev.LineReqOption) {
 	var opts []gpiocdev.LineReqOption
-
-	const (
-		PinInput       PinOptions = 1 << 0
-		PinOutput      PinOptions = 1 << 1
-		PinOutputLow   PinOptions = 1 << 2
-		PinOutputHigh  PinOptions = 1 << 3
-		PinPullUp      PinOptions = 1 << 4
-		PinPullDown    PinOptions = 1 << 5
-		PinRisingEdge  PinOptions = 1 << 6
-		PinFallingEdge PinOptions = 1 << 7
-		PinBothEdges   PinOptions = 1 << 8
-	)
 
 	if options&PinOutput != 0 {
 		if options&PinOutputHigh != 0 {
