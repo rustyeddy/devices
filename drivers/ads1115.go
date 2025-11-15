@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 
 	"github.com/rustyeddy/devices"
 	"periph.io/x/conn/v3/analog"
@@ -46,6 +47,7 @@ func GetADS1115() *ADS1115 {
 func NewADS1115(name string, bus string, addr int) *ADS1115 {
 	a := &ADS1115{}
 	if devices.IsMock() {
+		slog.Info("device_ads1115: running in mock mode")
 		a.mock = true
 		return a
 	}
@@ -60,6 +62,11 @@ func (a *ADS1115) Open() (err error) {
 	if _, err := host.Init(); err != nil {
 		log.Printf("device_ads1115: host init failed: %s", err)
 		return err
+	}
+
+	if a.mock {
+		slog.Info("device_ads1115: running in mock mode")
+		return nil
 	}
 
 	// Open default I²C bus.
@@ -126,8 +133,8 @@ func (a *ADS1115) Set(i int, v float64) error {
 
 // ADS1115Pin is an analog analagous to a digital pin
 type ADS1115Pin struct {
-	name	string
-	index	int
+	name    string
+	index   int
 	options []PinOptions
 	ads1x15.PinADC
 }
