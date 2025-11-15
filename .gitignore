@@ -12,6 +12,7 @@
 *.test
 debug.*
 test.*
+__debug*
 
 # Code coverage profiles and other test artifacts
 *.out
