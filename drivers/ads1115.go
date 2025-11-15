@@ -1,4 +1,6 @@
-//go:build linux
+//go:build linux && (arm || arm64)
+// +build linux
+// +build arm arm64
 
 package drivers
 
@@ -58,6 +60,11 @@ func NewADS1115(name string, bus string, addr int) *ADS1115 {
 
 // Init prepares the chip for usage
 func (a *ADS1115) Open() (err error) {
+	if a.mock {
+		slog.Info("device_ads1115: running in mock mode")
+		return nil
+	}
+
 	// Make sure periph is initialized.
 	if _, err := host.Init(); err != nil {
 		log.Printf("device_ads1115: host init failed: %s", err)

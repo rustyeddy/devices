@@ -24,17 +24,17 @@ import (
 
 var (
 	ErrOutOfRange    = errors.New("pin out of range")
-	ErrPinIsAnOutput = errors.New("can not set an output pin")
+	ErrPinIsAnOutput = errors.New("can not set input pin")
 )
 
 // PIN_COUNT provides the number of pins per VPIO bank
 const PIN_COUNT = 64
 
 type VPin[T Value] struct {
-	id        string
-	index     int
-	options   []PinOptions
-	value     T
+	id      string
+	index   int
+	options []PinOptions
+	value   T
 }
 
 func (v *VPIO[T]) Open() error {
@@ -89,7 +89,7 @@ func (v *VPin[T]) ReadContinuous() <-chan T {
 			valq <- val
 		}
 	}()
-	return valq	
+	return valq
 }
 
 type Transaction[T Value] struct {
@@ -99,7 +99,7 @@ type Transaction[T Value] struct {
 }
 
 type VPIO[T Value] struct {
-	pins[PIN_COUNT]VPin[T]
+	pins         [PIN_COUNT]VPin[T]
 	recording    bool
 	transactions []*Transaction[T]
 }
