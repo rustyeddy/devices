@@ -18,19 +18,20 @@ const (
 type EventType int
 
 type GPIO[T any] interface {
-	SetPin(name string, pin int, options PinOptions) (Pin[T], error)
-	Get(pin int) (T, error)
-	Set(pin int, v T) error
 	Open() error
 	Close() error
+	SetPin(name string, pin int, options ...PinOptions) (Pin[T], error)
+	Get(pin int) (T, error)
+	Set(pin int, v T) error
 }
 
 type Pin[T any] interface {
 	ID() string
 	Index() int
-	Options() PinOptions
+	Options() []PinOptions
 	Get() (T, error)
 	Set(v T) error
+	ReadContinuous() <-chan T
 }
 
 type Value interface {

@@ -366,7 +366,7 @@ func TestBME280FieldInitialization(t *testing.T) {
 		assert.NotNil(t, bme.driver)
 	}
 
-	assert.Equal(t, "test-device", bme.Name(), "Device name = %s, want test-device", bme.ID())
+	assert.Equal(t, "test-device", bme.Name(), "Device name = %s, want test-device", bme.Name())
 	assert.Equal(t, "/dev/i2c-2", bme.bus)
 	assert.Equal(t, 0x76, bme.addr)
 }

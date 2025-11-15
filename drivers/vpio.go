@@ -18,6 +18,8 @@ gpiocdev.WithPullUp
 import (
 	"errors"
 	"time"
+
+	"log/slog"
 )
 
 var (
@@ -31,7 +33,7 @@ const PIN_COUNT = 64
 type VPin[T Value] struct {
 	id        string
 	index     int
-	options   PinOptions
+	options   []PinOptions
 	value     T
 }
 
@@ -55,7 +57,7 @@ func (p *VPin[T]) Index() int {
 }
 
 // Direction returns the pin direction
-func (p *VPin[T]) Options() PinOptions {
+func (p *VPin[T]) Options() []PinOptions {
 	return p.options
 }
 
@@ -75,6 +77,21 @@ func (p *VPin[T]) Set(val T) error {
 	return nil
 }
 
+func (v *VPin[T]) ReadContinuous() <-chan T {
+	valq := make(chan T)
+	go func() {
+		for {
+			val, err := v.Get()
+			if err != nil {
+				slog.Error("Errored to in v.Get() read ", "error", err)
+				continue
+			}
+			valq <- val
+		}
+	}()
+	return valq	
+}
+
 type Transaction[T Value] struct {
 	index int
 	value T
@@ -91,7 +108,7 @@ func NewVPIO[T Value]() *VPIO[T] {
 	return &VPIO[T]{}
 }
 
-func (v *VPIO[T]) SetPin(id string, i int, opts PinOptions) (Pin[T], error) {
+func (v *VPIO[T]) SetPin(id string, i int, opts ...PinOptions) (Pin[T], error) {
 	if i >= PIN_COUNT {
 		return nil, ErrOutOfRange
 	}
@@ -148,4 +165,3 @@ func (v *VPIO[T]) GetTransactions() []*Transaction[T] {
 func (v *VPIO[T]) ClearTransactions() {
 	v.transactions = make([]*Transaction[T], 0)
 }
-

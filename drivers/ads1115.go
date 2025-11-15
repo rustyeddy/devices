@@ -90,7 +90,7 @@ func (a *ADS1115) Close() error {
 }
 
 // Pin allocates and prepares one of the ads1115 pins (0 - 3) for use.
-func (a *ADS1115) SetPin(name string, ch int, opts any) (pin *ADS1115Pin, err error) {
+func (a *ADS1115) SetPin(name string, ch int, opts ...PinOptions) (pin *ADS1115Pin, err error) {
 	// Obtain an analog pin from the ADC.
 	if ch < 0 || ch > 3 {
 		return pin, fmt.Errorf("PinInit Invalid channel %d", ch)
@@ -116,10 +116,19 @@ func (a *ADS1115) SetPin(name string, ch int, opts any) (pin *ADS1115Pin, err er
 	return pin, err
 }
 
+func (a *ADS1115) Get(i int) (float64, error) {
+	return a.pins[i].Get()
+}
+
+func (a *ADS1115) Set(i int, v float64) error {
+	return a.pins[i].Set(v)
+}
+
 // ADS1115Pin is an analog analagous to a digital pin
 type ADS1115Pin struct {
 	name	string
 	index	int
+	options []PinOptions
 	ads1x15.PinADC
 }
 
@@ -140,6 +149,10 @@ func (p *ADS1115Pin) ID() string {
 
 func (p *ADS1115Pin) Index() int {
 	return p.index
+}
+
+func (p *ADS1115Pin) Options() []PinOptions {
+	return p.options
 }
 
 // String is written text to hopefully drop some old eyeball style of

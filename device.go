@@ -7,6 +7,7 @@ package devices
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 type Type uint8
@@ -60,9 +61,12 @@ func IsMock() bool {
 	return mocking
 }
 
+type TimerHandler func(time.Time)
+
 type DeviceBase[T any] struct {
 	name string
 	devtype Type
+	timerLoop *func(time.Time)
 }
 
 func NewDeviceBase[T any](name string) *DeviceBase[T] {

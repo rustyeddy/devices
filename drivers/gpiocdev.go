@@ -68,7 +68,6 @@ func (g *GPIOCDev) SetPin(name string, pinIndex int, options PinOptions) (*GPIOC
 	}
 
 	opts := pinOptionsToGPIOCDev(options)
-
 	pin := &GPIOCDevPin{
 		id:        name,
 		index:     pinIndex,
