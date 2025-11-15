@@ -1,3 +1,7 @@
+//go:build linux && (arm || arm64)
+// +build linux
+// +build arm arm64
+
 package main
 
 import (
@@ -15,14 +19,14 @@ const (
 
 func main() {
 	ads := drivers.NewADS1115("ADS1115", "/dev/i2c-1", 0x48)
-	ads.Init()
+	ads.Open()
 
 	var err error
 	var pins [4]drivers.AnalogPin
 	var chans4 [4]<-chan float64
 	for i := 0; i < 4; i++ {
 		pname := fmt.Sprintf("pin%d", i)
-		pins[i], err = ads.Pin(pname, i, nil)
+		pins[i], err = ads.SetPin(pname, i)
 		if err != nil {
 			fmt.Printf("Error creating pin: %d\n", i)
 		}
@@ -31,7 +35,7 @@ func main() {
 
 	for j := 0; j < 4; j++ {
 		for i := 0; i < 4; i++ {
-			val, err := pins[i].Read()
+			val, err := pins[i].Get()
 			if err != nil {
 				fmt.Printf("failed to read pin[%d] = %s\n", i, err)
 				continue

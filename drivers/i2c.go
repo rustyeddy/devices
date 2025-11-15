@@ -47,7 +47,7 @@ func getI2CBus(bus string) (b *i2cbus) {
 }
 
 func (i *i2cbus) open(addr int) (dev *i2c.Device, err error) {
-	d, err := i2c.Open(&i2c.Devfs{i.bus}, addr)
+	d, err := i2c.Open(&i2c.Devfs{Dev: i.bus}, addr)
 	if err != nil {
 		return dev, err
 	}

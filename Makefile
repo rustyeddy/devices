@@ -7,7 +7,11 @@ init:
 	git update --init 
 
 build:
+	rm -f garden-station
 	go build -v . 
+
+fmt:
+	gofmt -w .
 
 test:
 	rm -f cover.out
@@ -24,4 +28,4 @@ html: test
 	rm -f coverage.html
 	go tool cover -html=cover.out -o coverage.html
 
-.PHONY: all test build $(SUBDIRS)
+.PHONY: all test build fmt $(SUBDIRS)

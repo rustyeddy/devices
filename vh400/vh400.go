@@ -4,65 +4,38 @@ package vh400
 // For calculations on the VWC.  Borrowed from above website
 
 import (
-	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/rustyeddy/devices"
 	"github.com/rustyeddy/devices/drivers"
 )
 
 type VH400 struct {
-	id  string
-	pin int
-	drivers.AnalogPin
-	devices.Device[float64]
+	drivers.Pin[float64]
+	*devices.DeviceBase[float64]
 }
 
-func New(id string, pin int) *VH400 {
-	v := &VH400{
-		id:  id,
-		pin: pin,
-	}
-	v.Device = v
-	return v
-}
-
-func (v *VH400) Open() error {
-	if devices.IsMock() {
-		v.AnalogPin = drivers.NewMockAnalogPin(v.id, v.pin, nil)
-		return nil
-	}
-
-	ads := drivers.GetADS1115()
-	p, err := ads.Pin(v.id, v.pin, nil)
+func New(name string, index int) (*VH400, error) {
+	gpio := drivers.GetGPIO[float64]()
+	p, err := gpio.SetPin(name, index, drivers.PinOutput)
 	if err != nil {
-		return fmt.Errorf("VH400 ERROR opening %s pin: %d - error: %s",
-			v.id, v.pin, err)
+		return nil, err
 	}
-	v.AnalogPin = p
-	return nil
-}
-
-func (v *VH400) Close() error {
-	return v.AnalogPin.Close()
-}
-
-func (v *VH400) ID() string {
-	return v.id
+	v := &VH400{
+		DeviceBase: devices.NewDeviceBase[float64](name),
+		Pin:        p,
+	}
+	return v, nil
 }
 
 func (v *VH400) Get() (float64, error) {
-	volts, err := v.AnalogPin.Read()
+	volts, err := v.Pin.Get()
 	if err != nil {
 		return volts, err
 	}
 	vwc := vwc(volts)
 	return vwc, nil
 
-}
-
-func (v *VH400) Set(val float64) error {
-	return devices.ErrNotImplemented
 }
 
 func (v *VH400) Type() devices.Type {
@@ -117,7 +90,7 @@ func vwc(volts float64) float64 {
 		rem = 7.89
 
 	default:
-		log.Printf("VH400 Invalid voltage: out of range 0.0 -> 3.0 %5.2f", volts)
+		slog.Warn("VH400 Invalid voltage: out of range 0.0 -> 3.0", "voltage", volts)
 		return 0.0
 	}
 	vwc := coef*volts - rem

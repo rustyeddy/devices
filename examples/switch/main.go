@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// Get the GPIO driver
-	g := drivers.GetGPIO()
+	g := drivers.GetGPIO[bool]()
 	defer func() {
 		g.Close()
 	}()
@@ -23,43 +23,50 @@ func main() {
 	<-done
 }
 
-func startSwitchToggler(g *drivers.GPIO, done chan bool) {
+func startSwitchToggler(g drivers.GPIO[bool], done chan bool) {
 	on := false
-	r := g.Pin("reader", 23, gpiocdev.AsOutput(1))
+	r, err := g.SetPin("reader", 23, drivers.PinOutput)
+	if err != nil {
+		panic(err)
+	}
 	for {
 		if on {
-			r.On()
+			r.Set(on)
 			on = false
 		} else {
-			r.Off()
+			r.Set(on)
 			on = true
 		}
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func startSwitchHandler(g *drivers.GPIO, done chan bool) {
+func startSwitchHandler(g drivers.GPIO[bool], done chan bool) {
 	evtQ := make(chan gpiocdev.LineEvent)
-	sw := g.Pin("switch", 24, gpiocdev.WithPullUp, gpiocdev.WithBothEdges, gpiocdev.WithEventHandler(func(evt gpiocdev.LineEvent) {
-		evtQ <- evt
-	}))
+	sw, err := g.SetPin("switch", 24, drivers.PinPullUp, drivers.PinBothEdges)
+	// gpiocdev.WithEventHandler(func(evt gpiocdev.LineEvent) {
+	//	evtQ <- evt
+	//}))
+	if err != nil {
+		panic(err)
+	}
 
 	for {
 		select {
 		case evt := <-evtQ:
 			switch evt.Type {
 			case gpiocdev.LineEventFallingEdge:
-				slog.Info("GPIO failing edge", "pin", sw.Offset())
+				slog.Info("GPIO failing edge", "pin", sw.Index())
 				fallthrough
 
 			case gpiocdev.LineEventRisingEdge:
-				slog.Info("GPIO raising edge", "pin", sw.Offset())
+				slog.Info("GPIO raising edge", "pin", sw.Index())
 				v, err := sw.Get()
 				if err != nil {
 					slog.Error("Error getting input value: ", "error", err.Error())
 					continue
 				}
-				fmt.Printf("val: %d\n", v)
+				fmt.Printf("val: %t\n", v)
 
 			default:
 				slog.Warn("Switch unknown event type ", "type", evt.Type)

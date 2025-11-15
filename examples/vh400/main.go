@@ -19,10 +19,11 @@ func main() {
 		}
 	}
 
-	readQ := make(<-chan float64)
-	s := vh400.New("vh400", pin)
-	readQ = s.AnalogPin.ReadContinuous()
-
+	s, err := vh400.New("vh400", pin)
+	if err != nil {
+		panic(err)
+	}
+	readQ := s.ReadContinuous()
 	for {
 		select {
 		case val := <-readQ:

@@ -12,10 +12,10 @@ func init() {
 }
 
 func TestVH400(t *testing.T) {
-	v := New("vh400", 1)
+	v, err := New("vh400", 1)
+	assert.NoError(t, err)
 	assert.Equal(t, "vh400", v.ID())
 
-	err := v.Open()
 	assert.NoError(t, err, "VH400 failed to open")
 
 	val, err := v.Get()
@@ -24,7 +24,8 @@ func TestVH400(t *testing.T) {
 }
 
 func TestVH400_Name_ReturnsCorrectName(t *testing.T) {
-	v := New("vh400test", 2)
+	v, err := New("vh400test", 2)
+	assert.NoError(t, err)
 	if v == nil {
 		t.Fatalf("New returned nil")
 	}
@@ -34,12 +35,9 @@ func TestVH400_Name_ReturnsCorrectName(t *testing.T) {
 }
 
 func TestVH400_Read_ReturnsVWC(t *testing.T) {
-	v := New("vh400", 3)
-	assert.NotNil(t, v)
-
-	err := v.Open()
+	v, err := New("vh400", 3)
 	assert.NoError(t, err)
-
+	assert.NotNil(t, v)
 	val, err := v.Get()
 	assert.NoError(t, err)
 	assert.NotEqual(t, val, 0.0)
@@ -47,8 +45,7 @@ func TestVH400_Read_ReturnsVWC(t *testing.T) {
 
 func TestVH400_New_NonMockReturnsNilOnError(t *testing.T) {
 	devices.SetMock(false)
-	v := New("vh400fail", 99)
-	err := v.Open()
+	_, err := New("vh400fail", 99)
 	assert.Error(t, err)
 	devices.SetMock(true)
 }
@@ -75,11 +72,7 @@ func Test_vwc_CurveSegments(t *testing.T) {
 
 func TestVWCInvalidVoltage(t *testing.T) {
 	got := vwc(3.5)
-	if got != 0.0 {
-		t.Errorf("vwc(3.5) expected 0.0, got %v", got)
-	}
+	assert.Equal(t, got, 0.0)
 	got = vwc(-0.5)
-	if got != 0.0 {
-		t.Errorf("vwc(-0.5) expected 0.0, got %v", got)
-	}
+	assert.Equal(t, got, 0.0)
 }

@@ -1,0 +1,51 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Current Test File",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${fileDirname}",
+      "args": [
+        "-test.run",
+        "^${selectedText}$"
+      ],
+      "showLog": true
+    },
+    {
+      "name": "Debug All Tests in Current File",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${fileDirname}",
+      "showLog": true
+    },
+    {
+      "name": "Debug ads1115_test.go",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/drivers",
+      "args": [
+        "-test.v",
+        "-test.run",
+        "^TestADS1115.*$"
+      ],
+      "showLog": true
+    },
+    {
+      "name": "Debug Specific Test",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/drivers",
+      "args": [
+        "-test.v",
+        "-test.run",
+        "TestADS1115New"
+      ],
+      "showLog": true
+    }
+  ]
+}

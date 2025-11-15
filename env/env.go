@@ -1,6 +1,6 @@
 // Package bme280 provides a driver for the BME280 temperature, humidity,
 // and pressure sensor using I2C communication.
-package bme280
+package env
 
 import (
 	"errors"
@@ -11,23 +11,38 @@ import (
 	"github.com/rustyeddy/devices/drivers"
 )
 
+// Response returns values read from the sensor containing all three
+// values for temperature, humidity and pressure
+//     type Response bme280.Response
+
+type Env bme280.Response
+
 // BME280 represents an I2C temperature, humidity and pressure sensor.
 // It defaults to address 0x77 and implements the device.Device interface.
 type BME280 struct {
-	id     string
+	*devices.DeviceBase[Env]
 	bus    string
 	addr   int
 	driver *bme280.Driver
-
-	devices.Device[*bme280.Response]
-	MockReader func() (*bme280.Response, error) // Function to mock reading data
 }
 
-type Env struct {
-	Temperature string `json:"temperature"`
-	Humidity    string `json:"humidity"`
-	Pressure    string `json:"pressure"`
-}
+var (
+	ErrInitFailed    = errors.New("failed to initialize BME280")
+	ErrReadFailed    = errors.New("failed to read from BME280")
+	ErrMarshalFailed = errors.New("failed to marshal BME280 data")
+)
+
+const (
+	DefaultI2CBus     = "/dev/i2c-1"
+	DefaultI2CAddress = 0x77
+
+	minTemperature = -40.0
+	maxTemperature = 85.0
+	minHumidity    = 0.0
+	maxHumidity    = 100.0
+	minPressure    = 300.0
+	maxPressure    = 1100.0
+)
 
 // BME280Config holds the configuration for the BME280 sensor
 type BME280Config struct {
@@ -59,63 +74,33 @@ func DefaultConfig() BME280Config {
 	}
 }
 
-// Response returns values read from the sensor containing all three
-// values for temperature, humidity and pressure
-type Response bme280.Response
-
-var (
-	ErrInitFailed    = errors.New("failed to initialize BME280")
-	ErrReadFailed    = errors.New("failed to read from BME280")
-	ErrMarshalFailed = errors.New("failed to marshal BME280 data")
-)
-
-const (
-	DefaultI2CBus     = "/dev/i2c-1"
-	DefaultI2CAddress = 0x77
-
-	minTemperature = -40.0
-	maxTemperature = 85.0
-	minHumidity    = 0.0
-	maxHumidity    = 100.0
-	minPressure    = 300.0
-	maxPressure    = 1100.0
-)
-
 // Create a new BME280 at the give bus and address. Defaults are
 // typically /dev/i2c-1 address 0x99
-func New(id, bus string, addr int) *BME280 {
-	b := &BME280{
-		id:   id,
-		bus:  bus,
-		addr: addr,
+// func New(id, bus string, addr int) (*BME280, error) {
+func New(id, bus string, addr int) (b devices.Device[Env], err error) {
+	if devices.IsMock() {
+		b = &BME280Mock{
+			Env:        Env{},
+			DeviceBase: devices.NewDeviceBase[Env](id),
+		}
+	} else {
+		b = &BME280{
+			bus:        bus,
+			addr:       addr,
+			DeviceBase: devices.NewDeviceBase[Env](id),
+		}
 	}
-	b.Device = b
-	return b
-}
 
-func (b *BME280) ID() string {
-	return b.id
-}
-
-func (b *BME280) Type() devices.Type {
-	return devices.TypeBME280
+	return b, nil
 }
 
 // Init opens the i2c bus at the specified address and gets the device
 // ready for reading
 func (b *BME280) Open() error {
-	if devices.IsMock() {
-		if b.MockReader == nil {
-			b.MockReader = b.MockRead
-		}
-		return nil
-	}
-
 	i2c, err := drivers.GetI2CDriver(b.bus, b.addr)
 	if err != nil {
 		return err
 	}
-
 	b.driver = bme280.New(i2c)
 	err = b.driver.InitWith(bme280.ModeForced, bme280.Settings{
 		Filter:                  bme280.FilterOff,
@@ -134,23 +119,21 @@ func (b *BME280) Close() error {
 	return errors.New("TODO Need to implement bme280 close")
 }
 
+func (b *BME280) Set(v Env) error {
+	return errors.New("BME280 is read-only")
+}
+
 // Read one Response from the sensor. If this device is being mocked
 // we will make up some random floating point numbers between 0 and
 // 100.
-func (b *BME280) Get() (resp *bme280.Response, err error) {
-	if devices.IsMock() {
-		resp, err = b.MockReader()
-	} else {
-		val, err := b.driver.Read()
-		if err != nil {
-			return nil, err
-		}
-		resp = &val
-
-	}
+func (b *BME280) Get() (resp Env, err error) {
+	val, err := b.driver.Read()
 	if err != nil {
-		return resp, err
+		return Env{}, err
 	}
+	resp.Temperature = val.Temperature
+	resp.Humidity = val.Humidity
+	resp.Pressure = val.Pressure
 
 	inrange := func(val float64, min float64, max float64) error {
 		if val < min || val > max {
@@ -171,20 +154,37 @@ func (b *BME280) Get() (resp *bme280.Response, err error) {
 	return resp, err
 }
 
-func (b *BME280) Set(v *bme280.Response) error {
-	return devices.ErrTypeNotImplemented
+// BME280Mock provides a mocked BME280 for testing purposes
+type BME280Mock struct {
+	*devices.DeviceBase[Env]
+	Env
 }
 
-func (b *BME280) String() string {
-	return b.ID()
+func (b *BME280Mock) Open() error {
+	// Initialize with default mock values if not set
+	if b.Env.Temperature == 0 && b.Env.Pressure == 0 && b.Env.Humidity == 0 {
+		b.Env = Env{
+			Temperature: 50.12,
+			Pressure:    900.34,
+			Humidity:    77.56,
+		}
+	}
+	return nil
 }
 
-func (b *BME280) MockRead() (*bme280.Response, error) {
-	return &bme280.Response{
-		Temperature: 50.12,
-		Pressure:    900.34,
-		Humidity:    77.56,
-	}, nil
+func (b *BME280Mock) Close() error {
+	return nil
+}
+
+func (b *BME280Mock) Get() (Env, error) {
+	// Return stored values (set via Set() or defaults from Open())
+	fmt.Printf("BME280Mock.Get: Temp=%.2f, Hum=%.2f, Pres=%.2f\n", b.Env.Temperature, b.Env.Humidity, b.Env.Pressure)
+	return b.Env, nil
+}
+
+func (b *BME280Mock) Set(v Env) error {
+	b.Env = v
+	return nil
 }
 
 // ConvertCtoF converts Celsius to Fahrenheit
