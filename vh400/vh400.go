@@ -23,7 +23,7 @@ func New(name string, index int) (*VH400, error) {
 	}
 	v := &VH400{
 		DeviceBase: devices.NewDeviceBase[float64](name),
-		Pin: p,
+		Pin:        p,
 	}
 	return v, nil
 }

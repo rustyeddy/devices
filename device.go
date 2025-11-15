@@ -133,17 +133,14 @@ func (d *DeviceBase[T]) StartTicker(period time.Duration, f *func(time.Time)) {
 	}()
 }
 
-func (d *DeviceBase[T]) RegisterEventHandler(evt string, f func(evt *DeviceEvent)) {
+func (d *DeviceBase[T]) RegisterEventHandler(f func(evt *DeviceEvent)) {
 	d.eventHandler = &f
-	// Register for initial event
-	if d.eventHandler != nil && *d.eventHandler != nil && evt != "" {
-		evt := &DeviceEvent{
-			Type:    evt,
-			Message: "event handler registered",
-			Time:    time.Now(),
-		}
-		(*d.eventHandler)(evt)
+	evt := &DeviceEvent{
+		Type:    DeviceEventInitialized,
+		Message: "event handler registered",
+		Time:    time.Now(),
 	}
+	(*d.eventHandler)(evt)
 }
 
 func (d *DeviceBase[T]) HandleMsg(msg *messanger.Msg) error {

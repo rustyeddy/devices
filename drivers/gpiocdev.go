@@ -20,14 +20,14 @@ type GPIOCDev struct {
 
 // GPIOCDevPin implements the Pin interface for hardware GPIO pins
 type GPIOCDevPin struct {
-	id        string
-	index     int
-	line      *gpiocdev.Line
-	options	  PinOptions
-	opts      []gpiocdev.LineReqOption
-	value     int
-	evtQ      chan gpiocdev.LineEvent
-	mu        sync.RWMutex
+	id      string
+	index   int
+	line    *gpiocdev.Line
+	options PinOptions
+	opts    []gpiocdev.LineReqOption
+	value   int
+	evtQ    chan gpiocdev.LineEvent
+	mu      sync.RWMutex
 }
 
 var (
@@ -69,10 +69,10 @@ func (g *GPIOCDev) SetPin(name string, pinIndex int, options PinOptions) (*GPIOC
 
 	opts := pinOptionsToGPIOCDev(options)
 	pin := &GPIOCDevPin{
-		id:        name,
-		index:     pinIndex,
-		opts:      opts,
-		evtQ:      make(chan gpiocdev.LineEvent, 10),
+		id:    name,
+		index: pinIndex,
+		opts:  opts,
+		evtQ:  make(chan gpiocdev.LineEvent, 10),
 	}
 
 	line, err := gpiocdev.RequestLine(g.Chipname, pinIndex, opts...)
@@ -135,7 +135,7 @@ func (p *GPIOCDevPin) Index() int {
 }
 
 // Direction returns the pin direction
-func (p *GPIOCDevPin) Options() PinOptions  {
+func (p *GPIOCDevPin) Options() PinOptions {
 	return p.options
 }
 
@@ -254,7 +254,7 @@ func (p *GPIOCDevPin) Close() error {
 }
 
 // pinOptionsToGPIOCDev converts PinOptions to gpiocdev options
-func pinOptionsToGPIOCDev(options PinOptions) ([]gpiocdev.LineReqOption) {
+func pinOptionsToGPIOCDev(options PinOptions) []gpiocdev.LineReqOption {
 	var opts []gpiocdev.LineReqOption
 
 	if options&PinOutput != 0 {
@@ -285,7 +285,7 @@ func pinOptionsToGPIOCDev(options PinOptions) ([]gpiocdev.LineReqOption) {
 		}
 	}
 
-	if (options&(PinRisingEdge|PinFallingEdge|PinBothEdges) != 0) {
+	if options&(PinRisingEdge|PinFallingEdge|PinBothEdges) != 0 {
 		opts = append(opts, gpiocdev.WithDebounce(10*time.Millisecond))
 	}
 

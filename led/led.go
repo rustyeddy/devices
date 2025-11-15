@@ -3,7 +3,6 @@ package led
 import (
 	"github.com/rustyeddy/devices"
 	"github.com/rustyeddy/devices/drivers"
-
 )
 
 type LED struct {
@@ -19,11 +18,10 @@ func New(name string, index int, opts ...drivers.PinOptions) (*LED, error) {
 	}
 	b := &LED{
 		DeviceBase: devices.NewDeviceBase[bool](name),
-		Pin: p,
+		Pin:        p,
 	}
 	return b, nil
 }
-
 
 // type LED struct {
 // 	devices.DeviceBase[bool]

@@ -21,10 +21,9 @@ type Env bme280.Response
 // It defaults to address 0x77 and implements the device.Device interface.
 type BME280 struct {
 	*devices.DeviceBase[Env]
-	bus        string
-	addr       int
-	driver     *bme280.Driver
-	MockReader func() (*Env, error) // Function to mock reading data
+	bus    string
+	addr   int
+	driver *bme280.Driver
 }
 
 var (
@@ -44,8 +43,6 @@ const (
 	minPressure    = 300.0
 	maxPressure    = 1100.0
 )
-
-// const TypeBME280 devices.Type = 101
 
 // BME280Config holds the configuration for the BME280 sensor
 type BME280Config struct {
@@ -79,22 +76,27 @@ func DefaultConfig() BME280Config {
 
 // Create a new BME280 at the give bus and address. Defaults are
 // typically /dev/i2c-1 address 0x99
-func New(id, bus string, addr int) (*BME280, error) {
-	b := &BME280{
-		bus:  bus,
-		addr: addr,
+// func New(id, bus string, addr int) (*BME280, error) {
+func New(id, bus string, addr int) (b devices.Device[Env], err error) {
+	if devices.IsMock() {
+		b = &BME280Mock{
+			Env:        Env{},
+			DeviceBase: devices.NewDeviceBase[Env](id),
+		}
+	} else {
+		b = &BME280{
+			bus:        bus,
+			addr:       addr,
+			DeviceBase: devices.NewDeviceBase[Env](id),
+		}
 	}
-	b.DeviceBase = devices.NewDeviceBase[Env](id)
+
 	return b, nil
 }
 
 // Init opens the i2c bus at the specified address and gets the device
 // ready for reading
 func (b *BME280) Open() error {
-	if devices.IsMock() {
-		b.MockReader = b.MockRead
-		return nil
-	}
 	i2c, err := drivers.GetI2CDriver(b.bus, b.addr)
 	if err != nil {
 		return err
@@ -117,24 +119,21 @@ func (b *BME280) Close() error {
 	return errors.New("TODO Need to implement bme280 close")
 }
 
+func (b *BME280) Set(v Env) error {
+	return errors.New("BME280 is read-only")
+}
+
 // Read one Response from the sensor. If this device is being mocked
 // we will make up some random floating point numbers between 0 and
 // 100.
-func (b *BME280) Get() (resp *Env, err error) {
-	if devices.IsMock() {
-		resp, err = b.MockReader()
-	} else {
-		val, err := b.driver.Read()
-		if err != nil {
-			return nil, err
-		}
-		resp.Temperature = val.Temperature
-		resp.Humidity = val.Humidity
-		resp.Pressure = val.Pressure
-	}
+func (b *BME280) Get() (resp Env, err error) {
+	val, err := b.driver.Read()
 	if err != nil {
-		return resp, err
+		return Env{}, err
 	}
+	resp.Temperature = val.Temperature
+	resp.Humidity = val.Humidity
+	resp.Pressure = val.Pressure
 
 	inrange := func(val float64, min float64, max float64) error {
 		if val < min || val > max {
@@ -155,20 +154,36 @@ func (b *BME280) Get() (resp *Env, err error) {
 	return resp, err
 }
 
-// func (b *BME280) Set(v *bme280.Response) error {
-// 	return devices.ErrTypeNotImplemented
-// }
+// BME280Mock provides a mocked BME280 for testing purposes
+type BME280Mock struct {
+	*devices.DeviceBase[Env]
+	Env
+}
 
-// func (b *BME280) String() string {
-// 	return b.ID()
-// }
+func (b *BME280Mock) Open() error {
+	// Initialize with default mock values if not set
+	if b.Env.Temperature == 0 && b.Env.Pressure == 0 && b.Env.Humidity == 0 {
+		b.Env = Env{
+			Temperature: 50.12,
+			Pressure:    900.34,
+			Humidity:    77.56,
+		}
+	}
+	return nil
+}
 
-func (b *BME280) MockRead() (*Env, error) {
-	return &Env{
-		Temperature: 50.12,
-		Pressure:    900.34,
-		Humidity:    77.56,
-	}, nil
+func (b *BME280Mock) Close() error {
+	return nil
+}
+
+func (b *BME280Mock) Get() (Env, error) {
+	// Return stored values (set via Set() or defaults from Open())
+	return b.Env, nil
+}
+
+func (b *BME280Mock) Set(v Env) error {
+	b.Env = v
+	return nil
 }
 
 // ConvertCtoF converts Celsius to Fahrenheit

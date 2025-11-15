@@ -1,22 +1,21 @@
 package drivers
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
-	
+	"testing"
 )
 
 func TestVPIOBool(t *testing.T) {
-	pins := []struct{
-		id string
+	pins := []struct {
+		id    string
 		index int
-		dir PinOptions
-		val bool
-		err error
-	} {
-		{ id: "input", index: 1, val: true,  dir: PinInput, err: nil},
-			{ id: "output", index: 2, val: false, dir: PinOutput, err: nil },
-			{ id: "bad-index", index: 75, val: false, dir: PinOutput, err: ErrOutOfRange },
+		dir   PinOptions
+		val   bool
+		err   error
+	}{
+		{id: "input", index: 1, val: true, dir: PinInput, err: nil},
+		{id: "output", index: 2, val: false, dir: PinOutput, err: nil},
+		{id: "bad-index", index: 75, val: false, dir: PinOutput, err: ErrOutOfRange},
 	}
 
 	v := NewVPIO[bool]()
@@ -33,7 +32,7 @@ func TestVPIOBool(t *testing.T) {
 			continue
 		}
 
-		err =  v.Set(pin.index, pin.val)
+		err = v.Set(pin.index, pin.val)
 		assert.NoError(t, err)
 		val, err := v.Get(pin.index)
 		assert.NoError(t, err)
@@ -43,16 +42,16 @@ func TestVPIOBool(t *testing.T) {
 }
 
 func TestVPIOInt(t *testing.T) {
-	pins := []struct{
-		id string
+	pins := []struct {
+		id    string
 		index int
-		dir PinOptions
-		val int
-		err error
-	} {
-		{ id: "input", index: 1, val: 10,  dir: PinInput, err: nil},
-		{ id: "output", index: 2, val: 20, dir: PinOutput, err: nil },
-		{ id: "bad-index", index: 75, val: -1, dir: PinOutput, err: ErrOutOfRange },
+		dir   PinOptions
+		val   int
+		err   error
+	}{
+		{id: "input", index: 1, val: 10, dir: PinInput, err: nil},
+		{id: "output", index: 2, val: 20, dir: PinOutput, err: nil},
+		{id: "bad-index", index: 75, val: -1, dir: PinOutput, err: ErrOutOfRange},
 	}
 
 	v := NewVPIO[int]()
@@ -69,7 +68,7 @@ func TestVPIOInt(t *testing.T) {
 			continue
 		}
 
-		err =  v.Set(pin.index, pin.val)
+		err = v.Set(pin.index, pin.val)
 		assert.NoError(t, err)
 		val, err := v.Get(pin.index)
 		assert.NoError(t, err)
@@ -79,16 +78,16 @@ func TestVPIOInt(t *testing.T) {
 }
 
 func TestVPIOFloat(t *testing.T) {
-	pins := []struct{
-		id string
+	pins := []struct {
+		id    string
 		index int
-		dir PinOptions
-		val float64
-		err error
-	} {
-		{ id: "input", index: 1, val: 1.1,  dir: PinInput, err: nil},
-		{ id: "output", index: 2, val: 1.2, dir: PinOutput, err: nil },
-		{ id: "bad-index", index: 75, val: -1.0, dir: PinOutput, err: ErrOutOfRange },
+		dir   PinOptions
+		val   float64
+		err   error
+	}{
+		{id: "input", index: 1, val: 1.1, dir: PinInput, err: nil},
+		{id: "output", index: 2, val: 1.2, dir: PinOutput, err: nil},
+		{id: "bad-index", index: 75, val: -1.0, dir: PinOutput, err: ErrOutOfRange},
 	}
 
 	v := NewVPIO[float64]()
@@ -105,7 +104,7 @@ func TestVPIOFloat(t *testing.T) {
 			continue
 		}
 
-		err =  v.Set(pin.index, pin.val)
+		err = v.Set(pin.index, pin.val)
 		assert.NoError(t, err)
 		val, err := v.Get(pin.index)
 		assert.NoError(t, err)

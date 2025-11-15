@@ -3,7 +3,6 @@ package button
 import (
 	"github.com/rustyeddy/devices"
 	"github.com/rustyeddy/devices/drivers"
-
 )
 
 type Button struct {
@@ -19,8 +18,7 @@ func New(name string, index int, opts ...drivers.PinOptions) (*Button, error) {
 	}
 	b := &Button{
 		DeviceBase: devices.NewDeviceBase[bool](name),
-		Pin: p,
+		Pin:        p,
 	}
 	return b, nil
 }
-

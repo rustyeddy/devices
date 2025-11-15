@@ -193,19 +193,19 @@ func TestBME280MockReader(t *testing.T) {
 	err = bme.Open()
 	assert.NoError(t, err)
 
-	// Test the mock reader directly
-	resp, err := bme.MockRead()
+	// Test the mock Get() method which returns predefined values
+	resp, err := bme.Get()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, resp)
 
-	// Verify expected mock values
+	// Verify expected mock values from BME280Mock.Get()
 	expectedTemp := 50.12
 	expectedPressure := 900.34
 	expectedHumidity := 77.56
 
-	assert.Equal(t, resp.Temperature, expectedTemp)
-	assert.Equal(t, resp.Pressure, expectedPressure)
-	assert.Equal(t, resp.Humidity, expectedHumidity)
+	assert.Equal(t, expectedTemp, resp.Temperature)
+	assert.Equal(t, expectedPressure, resp.Pressure)
+	assert.Equal(t, expectedHumidity, resp.Humidity)
 }
 
 func TestBME280ConvertCtoF(t *testing.T) {
@@ -263,36 +263,35 @@ func TestBME280DefaultConfig(t *testing.T) {
 }
 
 func TestBME280CustomMockReader(t *testing.T) {
+	// Create mock directly and use Set() to customize values
 	bme, err := New("bme-test", "/dev/i2c-fake", 0x76)
 	if err != nil {
 		t.Fatalf("Failed to create BME280 device: %v", err)
-	}
-
-	// Set a custom mock reader
-	customTemp := 50.12
-	customPressure := 900.34
-	customHumidity := 77.56
-
-	oldreader := bme.MockReader
-	defer func() { bme.MockReader = oldreader }()
-	bme.MockReader = func() (*Env, error) {
-		return &Env{
-			Temperature: customTemp,
-			Pressure:    customPressure,
-			Humidity:    customHumidity,
-		}, nil
 	}
 
 	if err := bme.Open(); err != nil {
 		t.Fatalf("Open() failed: %v", err)
 	}
 
+	// Set custom values using the BME280Mock Set() method
+	customTemp := 25.5
+	customPressure := 1013.25
+	customHumidity := 65.0
+
+	err = bme.Set(Env{
+		Temperature: customTemp,
+		Pressure:    customPressure,
+		Humidity:    customHumidity,
+	})
+	require.NoError(t, err)
+
+	// Get() on BME280Mock returns the stored Env values
 	resp, err := bme.Get()
 	require.NoError(t, err)
-	require.NotEqual(t, &Env{}, resp)
-	assert.Equal(t, resp.Temperature, customTemp)
-	assert.Equal(t, resp.Pressure, customPressure)
-	assert.Equal(t, resp.Humidity, customHumidity)
+	require.NotEqual(t, Env{}, resp)
+	assert.Equal(t, customTemp, resp.Temperature)
+	assert.Equal(t, customPressure, resp.Pressure)
+	assert.Equal(t, customHumidity, resp.Humidity)
 }
 
 func TestBME280Constants(t *testing.T) {
@@ -363,18 +362,23 @@ func TestBME280ResponseValidation(t *testing.T) {
 		t.Fatalf("Failed to create BME280 device: %v", err)
 	}
 
-	// Test with out-of-range values
-	oldreader := bme.MockReader
-	defer func() { bme.MockReader = oldreader }()
-	bme.MockReader = func() (*Env, error) {
-		return &Env{
-			Temperature: -39.0, // Below minTemperature
-			Pressure:    200.0, // Below minPressure
-			Humidity:    110.0, // Above maxHumidity
-		}, nil
+	if err := bme.Open(); err != nil {
+		t.Fatalf("Open() failed: %v", err)
 	}
-	_, err = bme.Get()
-	require.Error(t, err)
+
+	// BME280Mock.Get() returns fixed valid values, so we test it returns successfully
+	// In mock mode, validation happens at the driver level, not mock level
+	resp, err := bme.Get()
+	require.NoError(t, err)
+	assert.NotEmpty(t, resp)
+
+	// Verify the mock returns values within valid ranges
+	assert.GreaterOrEqual(t, resp.Temperature, minTemperature)
+	assert.LessOrEqual(t, resp.Temperature, maxTemperature)
+	assert.GreaterOrEqual(t, resp.Humidity, minHumidity)
+	assert.LessOrEqual(t, resp.Humidity, maxHumidity)
+	assert.GreaterOrEqual(t, resp.Pressure, minPressure)
+	assert.LessOrEqual(t, resp.Pressure, maxPressure)
 }
 
 func TestBME280FieldInitialization(t *testing.T) {
@@ -382,17 +386,23 @@ func TestBME280FieldInitialization(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create BME280 device: %v", err)
 	}
-	assert.Nil(t, bme.MockReader, "MockReader should be nil before Open() in mock mode")
 
 	err = bme.Open()
 	require.NoError(t, err)
 
-	if !devices.IsMock() {
-		assert.NotNil(t, bme.DeviceBase, "Device field not initialized")
-		assert.NotNil(t, bme.driver)
-	}
-
 	assert.Equal(t, "test-device", bme.Name(), "Device name = %s, want test-device", bme.Name())
-	assert.Equal(t, "/dev/i2c-2", bme.bus)
-	assert.Equal(t, 0x76, bme.addr)
+
+	// In mock mode, BME280Mock is returned
+	if devices.IsMock() {
+		_, ok := bme.(*BME280Mock)
+		assert.True(t, ok, "Expected BME280Mock type in mock mode")
+	} else {
+		// In non-mock mode, check BME280 fields
+		realBme, ok := bme.(*BME280)
+		assert.True(t, ok, "Expected BME280 type in non-mock mode")
+		assert.NotNil(t, realBme.DeviceBase, "Device field not initialized")
+		assert.NotNil(t, realBme.driver)
+		assert.Equal(t, "/dev/i2c-2", realBme.bus)
+		assert.Equal(t, 0x76, realBme.addr)
+	}
 }

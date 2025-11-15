@@ -14,7 +14,6 @@ const (
 	PinBothEdges   PinOptions = 1 << 8
 )
 
-
 type EventType int
 
 type GPIO[T any] interface {
@@ -57,19 +56,19 @@ func GetGPIO[T Value]() GPIO[T] {
 			gpioBool = createGPIO[bool]()
 		}
 		return any(gpioBool).(GPIO[T])
-		
+
 	case int:
 		if gpioInt == nil {
 			gpioInt = createGPIO[int]()
 		}
 		return any(gpioInt).(GPIO[T])
-		
+
 	case float64:
 		if gpioFloat64 == nil {
 			gpioFloat64 = createGPIO[float64]()
 		}
 		return any(gpioFloat64).(GPIO[T])
-		
+
 	default:
 		// For other Value types, create a new VPIO instance (not cached)
 		return NewVPIO[T]()
@@ -89,4 +88,4 @@ func ResetGPIO() {
 
 // DigitalPin
 type DigitalPin Pin[bool]
-type AnalogPin	Pin[float64]
+type AnalogPin Pin[float64]

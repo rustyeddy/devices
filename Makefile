@@ -9,6 +9,9 @@ init:
 build:
 	go build -v . 
 
+fmt:
+	gofmt -w .
+
 test:
 	rm -f cover.out
 	go test -coverprofile=cover.out -cover ./...
@@ -24,4 +27,4 @@ html: test
 	rm -f coverage.html
 	go tool cover -html=cover.out -o coverage.html
 
-.PHONY: all test build $(SUBDIRS)
+.PHONY: all test build fmt $(SUBDIRS)
