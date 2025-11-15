@@ -21,9 +21,9 @@ type Env bme280.Response
 // It defaults to address 0x77 and implements the device.Device interface.
 type BME280 struct {
 	*devices.DeviceBase[Env]
-	bus    string
-	addr   int
-	driver *bme280.Driver
+	bus        string
+	addr       int
+	driver     *bme280.Driver
 	MockReader func() (*Env, error) // Function to mock reading data
 }
 
@@ -76,15 +76,16 @@ func DefaultConfig() BME280Config {
 		},
 	}
 }
+
 // Create a new BME280 at the give bus and address. Defaults are
 // typically /dev/i2c-1 address 0x99
-func New(id, bus string, addr int) *BME280 {
+func New(id, bus string, addr int) (*BME280, error) {
 	b := &BME280{
 		bus:  bus,
 		addr: addr,
 	}
 	b.DeviceBase = devices.NewDeviceBase[Env](id)
-	return b
+	return b, nil
 }
 
 // Init opens the i2c bus at the specified address and gets the device

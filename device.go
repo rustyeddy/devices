@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/rustyeddy/otto/messanger"
 )
 
 type Type uint8
@@ -33,10 +35,24 @@ const (
 	StateStopped
 )
 
+type DeviceEvent struct {
+	Type    string
+	Message string
+	Time    time.Time
+}
+
+const (
+	DeviceEventInitialized = "initialized"
+	DeviceEventError       = "error"
+	DeviceEventDataReady   = "data"
+	DeviceEventRisingEdge  = "rising"
+	DeviceEventFallingEdge = "falling"
+)
+
 var (
 	mocking               = false
-	ErrNotImplemented     = errors.New("Method is not implemented")
-	ErrTypeNotImplemented = errors.New("Type is not implemented")
+	ErrNotImplemented     = errors.New("method is not implemented")
+	ErrTypeNotImplemented = errors.New("type is not implemented")
 )
 
 // Device is a type-safe device contract for a single value type T.
@@ -64,9 +80,10 @@ func IsMock() bool {
 type TimerHandler func(time.Time)
 
 type DeviceBase[T any] struct {
-	name string
-	devtype Type
-	timerLoop *func(time.Time)
+	name         string
+	devtype      Type
+	timerLoop    *func(time.Time)
+	eventHandler *func(evt *DeviceEvent)
 }
 
 func NewDeviceBase[T any](name string) *DeviceBase[T] {
@@ -104,3 +121,31 @@ func (d *DeviceBase[T]) String() string {
 	return fmt.Sprintf("%s [%d]", d.Name(), d.devtype)
 }
 
+func (d *DeviceBase[T]) StartTicker(period time.Duration, f *func(time.Time)) {
+	d.timerLoop = f
+	go func() {
+		ticker := time.NewTicker(period)
+		for t := range ticker.C {
+			if d.timerLoop != nil && *d.timerLoop != nil {
+				(*d.timerLoop)(t)
+			}
+		}
+	}()
+}
+
+func (d *DeviceBase[T]) RegisterEventHandler(evt string, f func(evt *DeviceEvent)) {
+	d.eventHandler = &f
+	// Register for initial event
+	if d.eventHandler != nil && *d.eventHandler != nil && evt != "" {
+		evt := &DeviceEvent{
+			Type:    evt,
+			Message: "event handler registered",
+			Time:    time.Now(),
+		}
+		(*d.eventHandler)(evt)
+	}
+}
+
+func (d *DeviceBase[T]) HandleMsg(msg *messanger.Msg) error {
+	return ErrNotImplemented
+}
