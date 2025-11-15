@@ -5,7 +5,6 @@ import (
 
 	"github.com/maciej/bme280"
 	"github.com/rustyeddy/devices"
-	device "github.com/rustyeddy/devices"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,16 +45,16 @@ func TestBME280Creation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bme := New(tt.devName, tt.bus, tt.addr)
-			if bme == nil {
-				t.Fatal("Failed to create BME280 device")
+			bme, err := New(tt.devName, tt.bus, tt.addr)
+			if err != nil {
+				t.Fatalf("Failed to create BME280 device: %v", err)
 			}
 
 			if bme.Name() != tt.devName {
 				t.Errorf("Name() = %v, want %v", bme.Name(), tt.devName)
 			}
 
-			err := bme.Open()
+			err = bme.Open()
 			if tt.wantErr && err == nil {
 				t.Error("Open() expected error but got none")
 			} else if !tt.wantErr && err != nil {
@@ -87,7 +86,10 @@ func TestBME280Creation(t *testing.T) {
 // }
 
 func TestBME280Reading(t *testing.T) {
-	bme := New("bme-test", "/dev/i2c-fake", 0x76)
+	bme, err := New("bme-test", "/dev/i2c-fake", 0x76)
+	if err != nil {
+		t.Fatalf("Failed to create BME280 device: %v", err)
+	}
 	if err := bme.Open(); err != nil {
 		t.Fatalf("Open() failed: %v", err)
 	}
@@ -137,14 +139,20 @@ func TestBME280Reading(t *testing.T) {
 }
 
 func TestBME280ReadPub(t *testing.T) {
-	bme := New("bme-test", "/dev/i2c-fake", 0x76)
+	bme, err := New("bme-test", "/dev/i2c-fake", 0x76)
+	if err != nil {
+		t.Fatalf("Failed to create BME280 device: %v", err)
+	}
 	if err := bme.Open(); err != nil {
 		t.Fatalf("Open() failed: %v", err)
 	}
 }
 
 func TestBME280JSON(t *testing.T) {
-	bme := New("bme-test", "/dev/i2c-fake", 0x76)
+	bme, err := New("bme-test", "/dev/i2c-fake", 0x76)
+	if err != nil {
+		t.Fatalf("Failed to create BME280 device: %v", err)
+	}
 	if err := bme.Open(); err != nil {
 		t.Fatalf("Open() failed: %v", err)
 	}
@@ -167,7 +175,10 @@ func TestBME280JSON(t *testing.T) {
 }
 
 func TestBME280String(t *testing.T) {
-	bme := New("bme-test", "/dev/i2c-fake", 0x76)
+	bme, err := New("bme-test", "/dev/i2c-fake", 0x76)
+	if err != nil {
+		t.Fatalf("Failed to create BME280 device: %v", err)
+	}
 	str := bme.String()
 	require.NotEmpty(t, str)
 	expected := bme.Name() + " [0]"
@@ -175,8 +186,11 @@ func TestBME280String(t *testing.T) {
 }
 
 func TestBME280MockReader(t *testing.T) {
-	bme := New("bme-test", "/dev/i2c-fake", 0x76)
-	err := bme.Open()
+	bme, err := New("bme-test", "/dev/i2c-fake", 0x76)
+	if err != nil {
+		t.Fatalf("Failed to create BME280 device: %v", err)
+	}
+	err = bme.Open()
 	assert.NoError(t, err)
 
 	// Test the mock reader directly
@@ -249,7 +263,10 @@ func TestBME280DefaultConfig(t *testing.T) {
 }
 
 func TestBME280CustomMockReader(t *testing.T) {
-	bme := New("bme-test", "/dev/i2c-fake", 0x76)
+	bme, err := New("bme-test", "/dev/i2c-fake", 0x76)
+	if err != nil {
+		t.Fatalf("Failed to create BME280 device: %v", err)
+	}
 
 	// Set a custom mock reader
 	customTemp := 50.12
@@ -325,20 +342,26 @@ func TestBME280ErrorTypes(t *testing.T) {
 
 func TestBME280NonMockMode(t *testing.T) {
 	// Test with mock disabled - this should test the actual I2C path
-	device.SetMock(false)
-	defer device.SetMock(true) // Reset to mock mode
+	devices.SetMock(false)
+	defer devices.SetMock(true) // Reset to mock mode
 
-	bme := New("bme-test", "/dev/i2c-nonexistent", 0x76)
+	bme, err := New("bme-test", "/dev/i2c-nonexistent", 0x76)
+	if err != nil {
+		t.Fatalf("Failed to create BME280 device: %v", err)
+	}
 
 	// This should fail since we're using a nonexistent bus
-	err := bme.Open()
+	err = bme.Open()
 	if err == nil {
 		t.Error("Open() expected error with nonexistent I2C bus, got nil")
 	}
 }
 
 func TestBME280ResponseValidation(t *testing.T) {
-	bme := New("bme-test", "/dev/i2c-fake", 0x76)
+	bme, err := New("bme-test", "/dev/i2c-fake", 0x76)
+	if err != nil {
+		t.Fatalf("Failed to create BME280 device: %v", err)
+	}
 
 	// Test with out-of-range values
 	oldreader := bme.MockReader
@@ -350,18 +373,21 @@ func TestBME280ResponseValidation(t *testing.T) {
 			Humidity:    110.0, // Above maxHumidity
 		}, nil
 	}
-	_, err := bme.Get()
+	_, err = bme.Get()
 	require.Error(t, err)
 }
 
 func TestBME280FieldInitialization(t *testing.T) {
-	bme := New("test-device", "/dev/i2c-2", 0x76)
+	bme, err := New("test-device", "/dev/i2c-2", 0x76)
+	if err != nil {
+		t.Fatalf("Failed to create BME280 device: %v", err)
+	}
 	assert.Nil(t, bme.MockReader, "MockReader should be nil before Open() in mock mode")
 
-	err := bme.Open()
+	err = bme.Open()
 	require.NoError(t, err)
 
-	if !device.IsMock() {
+	if !devices.IsMock() {
 		assert.NotNil(t, bme.DeviceBase, "Device field not initialized")
 		assert.NotNil(t, bme.driver)
 	}
