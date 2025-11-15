@@ -178,6 +178,7 @@ func (b *BME280Mock) Close() error {
 
 func (b *BME280Mock) Get() (Env, error) {
 	// Return stored values (set via Set() or defaults from Open())
+	fmt.Printf("BME280Mock.Get: Temp=%.2f, Hum=%.2f, Pres=%.2f\n", b.Env.Temperature, b.Env.Humidity, b.Env.Pressure)
 	return b.Env, nil
 }
 

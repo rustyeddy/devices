@@ -7,6 +7,7 @@ init:
 	git update --init 
 
 build:
+	rm -f garden-station
 	go build -v . 
 
 fmt:

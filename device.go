@@ -66,6 +66,11 @@ type Device[T any] interface {
 	Get() (T, error)
 	Set(v T) error
 
+	TickHandler() *func(time.Time)
+	StartTicker(period time.Duration, f *func(time.Time))
+	RegisterEventHandler(f func(evt *DeviceEvent))
+	HandleMsg(msg *messanger.Msg) error
+
 	String() string
 }
 
@@ -82,7 +87,7 @@ type TimerHandler func(time.Time)
 type DeviceBase[T any] struct {
 	name         string
 	devtype      Type
-	timerLoop    *func(time.Time)
+	tickHandler  *func(time.Time)
 	eventHandler *func(evt *DeviceEvent)
 }
 
@@ -122,12 +127,12 @@ func (d *DeviceBase[T]) String() string {
 }
 
 func (d *DeviceBase[T]) StartTicker(period time.Duration, f *func(time.Time)) {
-	d.timerLoop = f
+	d.tickHandler = f
 	go func() {
 		ticker := time.NewTicker(period)
 		for t := range ticker.C {
-			if d.timerLoop != nil && *d.timerLoop != nil {
-				(*d.timerLoop)(t)
+			if d.tickHandler != nil && *d.tickHandler != nil {
+				(*d.tickHandler)(t)
 			}
 		}
 	}()
@@ -141,6 +146,10 @@ func (d *DeviceBase[T]) RegisterEventHandler(f func(evt *DeviceEvent)) {
 		Time:    time.Now(),
 	}
 	(*d.eventHandler)(evt)
+}
+
+func (d *DeviceBase[T]) TickHandler() *func(time.Time) {
+	return d.tickHandler
 }
 
 func (d *DeviceBase[T]) HandleMsg(msg *messanger.Msg) error {
