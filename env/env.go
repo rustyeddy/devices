@@ -5,6 +5,7 @@ package env
 import (
 	"errors"
 	"fmt"
+	"encoding/json"
 
 	"github.com/maciej/bme280"
 	"github.com/rustyeddy/devices"
@@ -16,6 +17,14 @@ import (
 //     type Response bme280.Response
 
 type Env bme280.Response
+
+func (e *Env) JSON() ([]byte, error) {
+	jbuf, err := json.Marshal(e)
+	if err != nil {
+		return nil, err
+	}
+	return jbuf, err
+}
 
 // BME280 represents an I2C temperature, humidity and pressure sensor.
 // It defaults to address 0x77 and implements the device.Device interface.

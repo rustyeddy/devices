@@ -39,9 +39,9 @@ type Value interface {
 
 // Singleton instances for supported types
 var (
-	gpioBool    GPIO[bool]
+	gpioDigital GPIO[bool]
 	gpioInt     GPIO[int]
-	gpioFloat64 GPIO[float64]
+	gpioAnalog  GPIO[float64]
 )
 
 // GetGPIO returns the singleton GPIO instance for the specified type.
@@ -52,10 +52,10 @@ func GetGPIO[T Value]() GPIO[T] {
 	var zero T
 	switch any(zero).(type) {
 	case bool:
-		if gpioBool == nil {
-			gpioBool = createGPIO[bool]()
+		if gpioDigital == nil {
+			gpioDigital = createGPIO[bool]()
 		}
-		return any(gpioBool).(GPIO[T])
+		return any(gpioDigital).(GPIO[T])
 
 	case int:
 		if gpioInt == nil {
@@ -64,10 +64,10 @@ func GetGPIO[T Value]() GPIO[T] {
 		return any(gpioInt).(GPIO[T])
 
 	case float64:
-		if gpioFloat64 == nil {
-			gpioFloat64 = createGPIO[float64]()
+		if gpioAnalog == nil {
+			gpioAnalog = createGPIO[float64]()
 		}
-		return any(gpioFloat64).(GPIO[T])
+		return any(gpioAnalog).(GPIO[T])
 
 	default:
 		// For other Value types, create a new VPIO instance (not cached)
@@ -81,9 +81,9 @@ func createGPIO[T Value]() GPIO[T] {
 
 // ResetGPIO clears all singleton instances (useful for testing)
 func ResetGPIO() {
-	gpioBool = nil
+	gpioDigital = nil
 	gpioInt = nil
-	gpioFloat64 = nil
+	gpioAnalog = nil
 }
 
 // DigitalPin
