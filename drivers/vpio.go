@@ -165,3 +165,9 @@ func (v *VPIO[T]) GetTransactions() []*Transaction[T] {
 func (v *VPIO[T]) ClearTransactions() {
 	v.transactions = make([]*Transaction[T], 0)
 }
+
+// PlayTranactions takes a function that will set values
+// in the VPIO accordingly
+func (v *VPIO[T]) PlayTransactions(f func()) {
+	f()
+}

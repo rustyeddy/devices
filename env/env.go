@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"encoding/json"
+	"log/slog"
 
 	"github.com/maciej/bme280"
 	"github.com/rustyeddy/devices"
@@ -187,7 +188,10 @@ func (b *BME280Mock) Close() error {
 
 func (b *BME280Mock) Get() (Env, error) {
 	// Return stored values (set via Set() or defaults from Open())
-	fmt.Printf("BME280Mock.Get: Temp=%.2f, Hum=%.2f, Pres=%.2f\n", b.Env.Temperature, b.Env.Humidity, b.Env.Pressure)
+	slog.Info("BME280 Mock Get", "temp", b.Temperature, "humidity", b.Humidity, "pressure", b.Pressure)
+	b.Temperature += 0.1
+	b.Humidity += 0.02
+	b.Pressure += 0.001
 	return b.Env, nil
 }
 
