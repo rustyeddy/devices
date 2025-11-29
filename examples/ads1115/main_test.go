@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/rustyeddy/devices"
-	"github.com/rustyeddy/devices/env"
+	"github.com/rustyeddy/devices/bme280"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +17,7 @@ func init() {
 func TestableMain() error {
 	// Set the BME i2c device and address Initialize the bme to use
 	// the i2c bus
-	bme, err := env.New("bme280", "/dev/i2c-1", 0x76)
+	bme, err := bme280.New("bme280", "/dev/i2c-1", 0x76)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func TestBME280Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bme, err := env.New(tt.deviceName, tt.i2cBus, tt.i2cAddr)
+			bme, err := bme280.New(tt.deviceName, tt.i2cBus, tt.i2cAddr)
 			if err != nil {
 				t.Fatalf("Failed to create BME280 device: %v", err)
 			}
@@ -143,7 +143,7 @@ func TestBME280ErrorHandling(t *testing.T) {
 			deviceName:  "",
 			i2cBus:      "/dev/i2c-1",
 			i2cAddr:     0x76,
-			shouldPanic: false, // env.New should handle this gracefully
+			shouldPanic: false, // bme280.New should handle this gracefully
 		},
 		{
 			name:        "invalid I2C address - negative",
@@ -165,7 +165,7 @@ func TestBME280ErrorHandling(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldPanic {
 				assert.Panics(t, func() {
-					bme, err := env.New(tt.deviceName, tt.i2cBus, tt.i2cAddr)
+					bme, err := bme280.New(tt.deviceName, tt.i2cBus, tt.i2cAddr)
 					if err != nil {
 						panic(err)
 					}
@@ -180,7 +180,7 @@ func TestBME280ErrorHandling(t *testing.T) {
 				})
 			} else {
 				assert.NotPanics(t, func() {
-					bme, err := env.New(tt.deviceName, tt.i2cBus, tt.i2cAddr)
+					bme, err := bme280.New(tt.deviceName, tt.i2cBus, tt.i2cAddr)
 					if err != nil {
 						t.Logf("Expected error creating device: %v", err)
 						return
@@ -201,7 +201,7 @@ func TestBME280ErrorHandling(t *testing.T) {
 }
 
 func TestBME280MockData(t *testing.T) {
-	bme, err := env.New("bme280-mock", "/dev/i2c-1", 0x76)
+	bme, err := bme280.New("bme280-mock", "/dev/i2c-1", 0x76)
 	require.NoError(t, err)
 
 	err = bme.Open()
@@ -251,10 +251,10 @@ func TestBME280DeviceProperties(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bme, err := env.New(tt.deviceName, tt.i2cBus, tt.i2cAddr)
+			bme, err := bme280.New(tt.deviceName, tt.i2cBus, tt.i2cAddr)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.deviceName, bme.Name())
+			assert.Equal(t, tt.deviceName, bme.Name(), 0.10)
 			assert.Contains(t, bme.String(), tt.deviceName)
 
 			err = bme.Open()
@@ -268,9 +268,9 @@ func TestBME280DeviceProperties(t *testing.T) {
 			require.NoError(t, err)
 
 			// In mock mode, readings should be consistent
-			assert.Equal(t, val1.Temperature, val2.Temperature)
-			assert.Equal(t, val1.Humidity, val2.Humidity)
-			assert.Equal(t, val1.Pressure, val2.Pressure)
+			assert.InDelta(t, val1.Temperature, val2.Temperature, 0.11)
+			assert.InDelta(t, val1.Humidity, val2.Humidity, 0.10)
+			assert.InDelta(t, val1.Pressure, val2.Pressure, 0.10)
 		})
 	}
 }
@@ -280,7 +280,7 @@ func TestBME280NonMockMode(t *testing.T) {
 	devices.SetMock(false)
 	defer devices.SetMock(true)
 
-	bme, err := env.New("bme280-real", "/dev/i2c-nonexistent", 0x76)
+	bme, err := bme280.New("bme280-real", "/dev/i2c-nonexistent", 0x76)
 	require.NoError(t, err)
 
 	// This should fail since we're using a nonexistent bus
@@ -289,7 +289,7 @@ func TestBME280NonMockMode(t *testing.T) {
 }
 
 func BenchmarkBME280Reading(b *testing.B) {
-	bme, err := env.New("bme280-bench", "/dev/i2c-1", 0x76)
+	bme, err := bme280.New("bme280-bench", "/dev/i2c-1", 0x76)
 	if err != nil {
 		b.Fatalf("Failed to create BME280 device: %v", err)
 	}

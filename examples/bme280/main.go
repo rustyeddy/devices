@@ -3,13 +3,13 @@ package main
 import (
 	"fmt"
 
-	"github.com/rustyeddy/devices/env"
+	"github.com/rustyeddy/devices/bme280"
 )
 
 func main() {
 	// Set the BME i2c device and address Initialize the bme to use
 	// the i2c bus
-	bme, err := env.New("bme280", "/dev/i2c-1", 0x76)
+	bme, err := bme280.New("bme280", "/dev/i2c-1", 0x76)
 	if err != nil {
 		panic(err)
 	}
