@@ -1,12 +1,11 @@
 // Package bme280 provides a driver for the BME280 temperature, humidity,
 // and pressure sensor using I2C communication.
-package env
+package bme280
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"encoding/json"
-	"log/slog"
 
 	"github.com/maciej/bme280"
 	"github.com/rustyeddy/devices"
@@ -104,6 +103,10 @@ func New(id, bus string, addr int) (b devices.Device[Env], err error) {
 	return b, nil
 }
 
+func (b *BME280) Name() string {
+	return b.DeviceBase.Name()
+}
+
 // Init opens the i2c bus at the specified address and gets the device
 // ready for reading
 func (b *BME280) Open() error {
@@ -188,7 +191,6 @@ func (b *BME280Mock) Close() error {
 
 func (b *BME280Mock) Get() (Env, error) {
 	// Return stored values (set via Set() or defaults from Open())
-	slog.Info("BME280 Mock Get", "temp", b.Temperature, "humidity", b.Humidity, "pressure", b.Pressure)
 	b.Temperature += 0.1
 	b.Humidity += 0.02
 	b.Pressure += 0.001

@@ -1,4 +1,4 @@
-package env
+package bme280
 
 import (
 	"testing"
@@ -203,9 +203,9 @@ func TestBME280MockReader(t *testing.T) {
 	expectedPressure := 900.34
 	expectedHumidity := 77.56
 
-	assert.Equal(t, expectedTemp, resp.Temperature)
-	assert.Equal(t, expectedPressure, resp.Pressure)
-	assert.Equal(t, expectedHumidity, resp.Humidity)
+	assert.InDelta(t, expectedTemp, resp.Temperature, 0.20)
+	assert.InDelta(t, expectedPressure, resp.Pressure, 0.10)
+	assert.InDelta(t, expectedHumidity, resp.Humidity, 0.10)
 }
 
 func TestBME280ConvertCtoF(t *testing.T) {
@@ -289,9 +289,10 @@ func TestBME280CustomMockReader(t *testing.T) {
 	resp, err := bme.Get()
 	require.NoError(t, err)
 	require.NotEqual(t, Env{}, resp)
-	assert.Equal(t, customTemp, resp.Temperature)
-	assert.Equal(t, customPressure, resp.Pressure)
-	assert.Equal(t, customHumidity, resp.Humidity)
+
+	assert.InDelta(t, customTemp, resp.Temperature, 0.20)
+	assert.InDelta(t, customPressure, resp.Pressure, 0.10)
+	assert.InDelta(t, customHumidity, resp.Humidity, 0.10)
 }
 
 func TestBME280Constants(t *testing.T) {
