@@ -119,6 +119,7 @@ func (b *BME280) Name() string {
 // ready for reading
 func (b *BME280) Open() error {
 	if b.isMock {
+		b.mu.Lock()
 		// ensure defaults are initialized
 		if b.Env.Temperature == 0 && b.Env.Pressure == 0 && b.Env.Humidity == 0 {
 			b.Env = Env{
@@ -127,6 +128,7 @@ func (b *BME280) Open() error {
 				Humidity:    77.56,
 			}
 		}
+		b.mu.Unlock()
 		return nil
 	}
 
@@ -157,7 +159,9 @@ func (b *BME280) Close() error {
 
 func (b *BME280) Set(v Env) error {
 	if b.isMock {
+		b.mu.Lock()
 		b.Env = v
+		b.mu.Unlock()
 		return nil
 	}
 	return errors.New("BME280 is read-only")
@@ -218,6 +222,7 @@ type BME280Mock struct {
 }
 
 func (b *BME280Mock) Open() error {
+	b.mu.Lock()
 	// Initialize with default mock values if not set
 	if b.Env.Temperature == 0 && b.Env.Pressure == 0 && b.Env.Humidity == 0 {
 		b.Env = Env{
@@ -226,6 +231,7 @@ func (b *BME280Mock) Open() error {
 			Humidity:    77.56,
 		}
 	}
+	b.mu.Unlock()
 	return nil
 }
 
@@ -250,7 +256,9 @@ func (b *BME280Mock) Get() (Env, error) {
 }
 
 func (b *BME280Mock) Set(v Env) error {
+	b.mu.Lock()
 	b.Env = v
+	b.mu.Unlock()
 	return nil
 }
 
