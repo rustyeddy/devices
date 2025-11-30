@@ -34,7 +34,7 @@ type BME280 struct {
 	addr   int
 	driver *bme280.Driver
 	isMock bool
-	Env
+	env    Env
 }
 
 var (
@@ -94,12 +94,12 @@ func New(id, bus string, addr int) (b *BME280, err error) {
 		addr:       addr,
 		DeviceBase: devices.NewDeviceBase[Env](id),
 		isMock:     devices.IsMock(),
-		Env:        Env{},
+		env:        Env{},
 	}
 
 	// initialize default mock values (will be used in Open/Get when isMock)
 	if b.isMock {
-		b.Env = Env{
+		b.env = Env{
 			Temperature: 50.12,
 			Pressure:    900.34,
 			Humidity:    77.56,
@@ -118,8 +118,8 @@ func (b *BME280) Name() string {
 func (b *BME280) Open() error {
 	if b.isMock {
 		// ensure defaults are initialized
-		if b.Env.Temperature == 0 && b.Env.Pressure == 0 && b.Env.Humidity == 0 {
-			b.Env = Env{
+		if b.env.Temperature == 0 && b.env.Pressure == 0 && b.env.Humidity == 0 {
+			b.env = Env{
 				Temperature: 50.12,
 				Pressure:    900.34,
 				Humidity:    77.56,
@@ -155,7 +155,7 @@ func (b *BME280) Close() error {
 
 func (b *BME280) Set(v Env) error {
 	if b.isMock {
-		b.Env = v
+		b.env = v
 		return nil
 	}
 	return errors.New("BME280 is read-only")
@@ -167,10 +167,10 @@ func (b *BME280) Set(v Env) error {
 func (b *BME280) Get() (resp Env, err error) {
 	if b.isMock {
 		// mutate stored values slightly to simulate readings
-		b.Env.Temperature += 0.1
-		b.Env.Humidity += 0.02
-		b.Env.Pressure += 0.001
-		return b.Env, nil
+		b.env.Temperature += 0.1
+		b.env.Humidity += 0.02
+		b.env.Pressure += 0.001
+		return b.env, nil
 	}
 
 	val, err := b.driver.Read()
