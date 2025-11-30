@@ -67,6 +67,17 @@ type BME280Config struct {
 	}
 }
 
+// defaultMockEnv returns the default mock environment values.
+// This helper centralizes mock defaults for consistency and
+// will support timeseries changes in the future.
+func defaultMockEnv() Env {
+	return Env{
+		Temperature: 50.12,
+		Pressure:    900.34,
+		Humidity:    77.56,
+	}
+}
+
 // DefaultConfig returns the default configuration
 func DefaultConfig() BME280Config {
 	return BME280Config{
@@ -99,11 +110,7 @@ func New(id, bus string, addr int) (b *BME280, err error) {
 
 	// initialize default mock values (will be used in Open/Get when isMock)
 	if b.isMock {
-		b.Env = Env{
-			Temperature: 50.12,
-			Pressure:    900.34,
-			Humidity:    77.56,
-		}
+		b.Env = defaultMockEnv()
 	}
 
 	return b, nil
@@ -119,11 +126,7 @@ func (b *BME280) Open() error {
 	if b.isMock {
 		// ensure defaults are initialized
 		if b.Env.Temperature == 0 && b.Env.Pressure == 0 && b.Env.Humidity == 0 {
-			b.Env = Env{
-				Temperature: 50.12,
-				Pressure:    900.34,
-				Humidity:    77.56,
-			}
+			b.Env = defaultMockEnv()
 		}
 		return nil
 	}
@@ -209,11 +212,7 @@ type BME280Mock struct {
 func (b *BME280Mock) Open() error {
 	// Initialize with default mock values if not set
 	if b.Env.Temperature == 0 && b.Env.Pressure == 0 && b.Env.Humidity == 0 {
-		b.Env = Env{
-			Temperature: 50.12,
-			Pressure:    900.34,
-			Humidity:    77.56,
-		}
+		b.Env = defaultMockEnv()
 	}
 	return nil
 }
