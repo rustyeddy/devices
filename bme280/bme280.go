@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/maciej/bme280"
 	"github.com/rustyeddy/devices"
@@ -33,6 +34,9 @@ type BME280 struct {
 	bus    string
 	addr   int
 	driver *bme280.Driver
+	isMock bool
+	mu     sync.Mutex // protects Env fields from concurrent access
+	env
 }
 
 var (
@@ -65,6 +69,17 @@ type BME280Config struct {
 	}
 }
 
+// defaultMockEnv returns the default mock environment values.
+// This helper centralizes mock defaults for consistency and
+// will support timeseries changes in the future.
+func defaultMockEnv() Env {
+	return Env{
+		Temperature: 50.12,
+		Pressure:    900.34,
+		Humidity:    77.56,
+	}
+}
+
 // DefaultConfig returns the default configuration
 func DefaultConfig() BME280Config {
 	return BME280Config{
@@ -87,17 +102,17 @@ func DefaultConfig() BME280Config {
 // typically /dev/i2c-1 address 0x99
 // func New(id, bus string, addr int) (*BME280, error) {
 func New(id, bus string, addr int) (b *BME280, err error) {
-	if devices.IsMock() {
-		b = &BME280Mock{
-			Env:        Env{},
-			DeviceBase: devices.NewDeviceBase[Env](id),
-		}
-	} else {
-		b = &BME280{
-			bus:        bus,
-			addr:       addr,
-			DeviceBase: devices.NewDeviceBase[Env](id),
-		}
+	b = &BME280{
+		bus:        bus,
+		addr:       addr,
+		DeviceBase: devices.NewDeviceBase[Env](id),
+		isMock:     devices.IsMock(),
+		env:        Env{},
+	}
+
+	// initialize default mock values (will be used in Open/Get when isMock)
+	if b.isMock {
+		b.Env = defaultMockEnv()
 	}
 
 	return b, nil
@@ -110,6 +125,10 @@ func (b *BME280) Name() string {
 // Init opens the i2c bus at the specified address and gets the device
 // ready for reading
 func (b *BME280) Open() error {
+	if b.isMock {
+		return nil
+	}
+
 	i2c, err := drivers.GetI2CDriver(b.bus, b.addr)
 	if err != nil {
 		return err
@@ -129,10 +148,19 @@ func (b *BME280) Open() error {
 }
 
 func (b *BME280) Close() error {
+	if b.isMock {
+		return nil
+	}
 	return errors.New("TODO Need to implement bme280 close")
 }
 
 func (b *BME280) Set(v Env) error {
+	if b.isMock {
+		b.mu.Lock()
+		b.Env = v
+		b.mu.Unlock()
+		return nil
+	}
 	return errors.New("BME280 is read-only")
 }
 
@@ -140,6 +168,17 @@ func (b *BME280) Set(v Env) error {
 // we will make up some random floating point numbers between 0 and
 // 100.
 func (b *BME280) Get() (resp Env, err error) {
+	if b.isMock {
+		b.mu.Lock()
+		// mutate stored values slightly to simulate readings
+		b.Env.Temperature += 0.1
+		b.Env.Humidity += 0.02
+		b.Env.Pressure += 0.001
+		resp = b.Env
+		b.mu.Unlock()
+		return resp, nil
+	}
+
 	val, err := b.driver.Read()
 	if err != nil {
 		return Env{}, err
@@ -170,18 +209,17 @@ func (b *BME280) Get() (resp Env, err error) {
 // BME280Mock provides a mocked BME280 for testing purposes
 type BME280Mock struct {
 	*devices.DeviceBase[Env]
+	mu sync.Mutex // protects Env fields from concurrent access
 	Env
 }
 
 func (b *BME280Mock) Open() error {
+	b.mu.Lock()
 	// Initialize with default mock values if not set
 	if b.Env.Temperature == 0 && b.Env.Pressure == 0 && b.Env.Humidity == 0 {
-		b.Env = Env{
-			Temperature: 50.12,
-			Pressure:    900.34,
-			Humidity:    77.56,
-		}
+		b.Env = defaultMockEnv()
 	}
+	b.mu.Unlock()
 	return nil
 }
 
@@ -190,15 +228,25 @@ func (b *BME280Mock) Close() error {
 }
 
 func (b *BME280Mock) Get() (Env, error) {
+	b.mu.Lock()
 	// Return stored values (set via Set() or defaults from Open())
-	b.Temperature += 0.1
-	b.Humidity += 0.02
-	b.Pressure += 0.001
-	return b.Env, nil
+	b.Env.Temperature += 0.1
+	b.Env.Humidity += 0.02
+	b.Env.Pressure += 0.001
+	// Return an immutable copy to avoid race conditions
+	result := Env{
+		Temperature: b.Env.Temperature,
+		Humidity:    b.Env.Humidity,
+		Pressure:    b.Env.Pressure,
+	}
+	b.mu.Unlock()
+	return result, nil
 }
 
 func (b *BME280Mock) Set(v Env) error {
+	b.mu.Lock()
 	b.Env = v
+	b.mu.Unlock()
 	return nil
 }
 
