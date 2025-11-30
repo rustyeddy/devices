@@ -170,7 +170,12 @@ func (b *BME280) Get() (resp Env, err error) {
 		b.Env.Temperature += 0.1
 		b.Env.Humidity += 0.02
 		b.Env.Pressure += 0.001
-		return b.Env, nil
+		// Return an immutable copy to avoid race conditions
+		return Env{
+			Temperature: b.Env.Temperature,
+			Humidity:    b.Env.Humidity,
+			Pressure:    b.Env.Pressure,
+		}, nil
 	}
 
 	val, err := b.driver.Read()
@@ -227,7 +232,12 @@ func (b *BME280Mock) Get() (Env, error) {
 	b.Temperature += 0.1
 	b.Humidity += 0.02
 	b.Pressure += 0.001
-	return b.Env, nil
+	// Return an immutable copy to avoid race conditions
+	return Env{
+		Temperature: b.Env.Temperature,
+		Humidity:    b.Env.Humidity,
+		Pressure:    b.Env.Pressure,
+	}, nil
 }
 
 func (b *BME280Mock) Set(v Env) error {
