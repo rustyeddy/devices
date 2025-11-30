@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/maciej/bme280"
 	"github.com/rustyeddy/devices"
@@ -34,6 +35,7 @@ type BME280 struct {
 	addr   int
 	driver *bme280.Driver
 	isMock bool
+	mu     sync.Mutex // protects Env during mock reads
 	Env
 }
 
@@ -166,16 +168,19 @@ func (b *BME280) Set(v Env) error {
 // 100.
 func (b *BME280) Get() (resp Env, err error) {
 	if b.isMock {
+		b.mu.Lock()
 		// mutate stored values slightly to simulate readings
 		b.Env.Temperature += 0.1
 		b.Env.Humidity += 0.02
 		b.Env.Pressure += 0.001
 		// Return an immutable copy to avoid race conditions
-		return Env{
+		result := Env{
 			Temperature: b.Env.Temperature,
 			Humidity:    b.Env.Humidity,
 			Pressure:    b.Env.Pressure,
-		}, nil
+		}
+		b.mu.Unlock()
+		return result, nil
 	}
 
 	val, err := b.driver.Read()
@@ -208,6 +213,7 @@ func (b *BME280) Get() (resp Env, err error) {
 // BME280Mock provides a mocked BME280 for testing purposes
 type BME280Mock struct {
 	*devices.DeviceBase[Env]
+	mu sync.Mutex // protects Env during mock reads
 	Env
 }
 
@@ -228,16 +234,19 @@ func (b *BME280Mock) Close() error {
 }
 
 func (b *BME280Mock) Get() (Env, error) {
+	b.mu.Lock()
 	// Return stored values (set via Set() or defaults from Open())
 	b.Env.Temperature += 0.1
 	b.Env.Humidity += 0.02
 	b.Env.Pressure += 0.001
 	// Return an immutable copy to avoid race conditions
-	return Env{
+	result := Env{
 		Temperature: b.Env.Temperature,
 		Humidity:    b.Env.Humidity,
 		Pressure:    b.Env.Pressure,
-	}, nil
+	}
+	b.mu.Unlock()
+	return result, nil
 }
 
 func (b *BME280Mock) Set(v Env) error {
