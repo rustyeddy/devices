@@ -36,7 +36,7 @@ type BME280 struct {
 	driver *bme280.Driver
 	isMock bool
 	mu     sync.Mutex // protects Env fields from concurrent access
-	Env
+	env
 }
 
 var (
