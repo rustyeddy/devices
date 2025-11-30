@@ -35,7 +35,7 @@ type BME280 struct {
 	addr   int
 	driver *bme280.Driver
 	isMock bool
-	mu     sync.Mutex // protects Env field in mock mode
+	mu     sync.Mutex // protects Env fields from concurrent access
 	Env
 }
 
@@ -209,14 +209,17 @@ func (b *BME280) Get() (resp Env, err error) {
 // BME280Mock provides a mocked BME280 for testing purposes
 type BME280Mock struct {
 	*devices.DeviceBase[Env]
+	mu sync.Mutex // protects Env fields from concurrent access
 	Env
 }
 
 func (b *BME280Mock) Open() error {
+	b.mu.Lock()
 	// Initialize with default mock values if not set
 	if b.Env.Temperature == 0 && b.Env.Pressure == 0 && b.Env.Humidity == 0 {
 		b.Env = defaultMockEnv()
 	}
+	b.mu.Unlock()
 	return nil
 }
 
@@ -225,15 +228,25 @@ func (b *BME280Mock) Close() error {
 }
 
 func (b *BME280Mock) Get() (Env, error) {
+	b.mu.Lock()
 	// Return stored values (set via Set() or defaults from Open())
-	b.Temperature += 0.1
-	b.Humidity += 0.02
-	b.Pressure += 0.001
-	return b.Env, nil
+	b.Env.Temperature += 0.1
+	b.Env.Humidity += 0.02
+	b.Env.Pressure += 0.001
+	// Return an immutable copy to avoid race conditions
+	result := Env{
+		Temperature: b.Env.Temperature,
+		Humidity:    b.Env.Humidity,
+		Pressure:    b.Env.Pressure,
+	}
+	b.mu.Unlock()
+	return result, nil
 }
 
 func (b *BME280Mock) Set(v Env) error {
+	b.mu.Lock()
 	b.Env = v
+	b.mu.Unlock()
 	return nil
 }
 
