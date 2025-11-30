@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/maciej/bme280"
 	"github.com/rustyeddy/devices"
@@ -34,6 +35,7 @@ type BME280 struct {
 	addr   int
 	driver *bme280.Driver
 	isMock bool
+	mu     sync.Mutex // protects Env field in mock mode
 	Env
 }
 
@@ -155,7 +157,9 @@ func (b *BME280) Close() error {
 
 func (b *BME280) Set(v Env) error {
 	if b.isMock {
+		b.mu.Lock()
 		b.Env = v
+		b.mu.Unlock()
 		return nil
 	}
 	return errors.New("BME280 is read-only")
@@ -166,11 +170,14 @@ func (b *BME280) Set(v Env) error {
 // 100.
 func (b *BME280) Get() (resp Env, err error) {
 	if b.isMock {
+		b.mu.Lock()
 		// mutate stored values slightly to simulate readings
 		b.Env.Temperature += 0.1
 		b.Env.Humidity += 0.02
 		b.Env.Pressure += 0.001
-		return b.Env, nil
+		resp = b.Env
+		b.mu.Unlock()
+		return resp, nil
 	}
 
 	val, err := b.driver.Read()
