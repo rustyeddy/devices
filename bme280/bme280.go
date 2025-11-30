@@ -35,7 +35,7 @@ type BME280 struct {
 	addr   int
 	driver *bme280.Driver
 	isMock bool
-	mu     sync.Mutex // protects Env during mock reads
+	mu     sync.Mutex // protects Env fields from concurrent access
 	Env
 }
 
@@ -217,7 +217,7 @@ func (b *BME280) Get() (resp Env, err error) {
 // BME280Mock provides a mocked BME280 for testing purposes
 type BME280Mock struct {
 	*devices.DeviceBase[Env]
-	mu sync.Mutex // protects Env during mock reads
+	mu sync.Mutex // protects Env fields from concurrent access
 	Env
 }
 
