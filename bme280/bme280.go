@@ -33,6 +33,8 @@ type BME280 struct {
 	bus    string
 	addr   int
 	driver *bme280.Driver
+	isMock bool
+	Env
 }
 
 var (
@@ -87,16 +89,20 @@ func DefaultConfig() BME280Config {
 // typically /dev/i2c-1 address 0x99
 // func New(id, bus string, addr int) (*BME280, error) {
 func New(id, bus string, addr int) (b *BME280, err error) {
-	if devices.IsMock() {
-		b = &BME280Mock{
-			Env:        Env{},
-			DeviceBase: devices.NewDeviceBase[Env](id),
-		}
-	} else {
-		b = &BME280{
-			bus:        bus,
-			addr:       addr,
-			DeviceBase: devices.NewDeviceBase[Env](id),
+	b = &BME280{
+		bus:        bus,
+		addr:       addr,
+		DeviceBase: devices.NewDeviceBase[Env](id),
+		isMock:     devices.IsMock(),
+		Env:        Env{},
+	}
+
+	// initialize default mock values (will be used in Open/Get when isMock)
+	if b.isMock {
+		b.Env = Env{
+			Temperature: 50.12,
+			Pressure:    900.34,
+			Humidity:    77.56,
 		}
 	}
 
@@ -110,6 +116,18 @@ func (b *BME280) Name() string {
 // Init opens the i2c bus at the specified address and gets the device
 // ready for reading
 func (b *BME280) Open() error {
+	if b.isMock {
+		// ensure defaults are initialized
+		if b.Env.Temperature == 0 && b.Env.Pressure == 0 && b.Env.Humidity == 0 {
+			b.Env = Env{
+				Temperature: 50.12,
+				Pressure:    900.34,
+				Humidity:    77.56,
+			}
+		}
+		return nil
+	}
+
 	i2c, err := drivers.GetI2CDriver(b.bus, b.addr)
 	if err != nil {
 		return err
@@ -129,10 +147,17 @@ func (b *BME280) Open() error {
 }
 
 func (b *BME280) Close() error {
+	if b.isMock {
+		return nil
+	}
 	return errors.New("TODO Need to implement bme280 close")
 }
 
 func (b *BME280) Set(v Env) error {
+	if b.isMock {
+		b.Env = v
+		return nil
+	}
 	return errors.New("BME280 is read-only")
 }
 
@@ -140,6 +165,14 @@ func (b *BME280) Set(v Env) error {
 // we will make up some random floating point numbers between 0 and
 // 100.
 func (b *BME280) Get() (resp Env, err error) {
+	if b.isMock {
+		// mutate stored values slightly to simulate readings
+		b.Env.Temperature += 0.1
+		b.Env.Humidity += 0.02
+		b.Env.Pressure += 0.001
+		return b.Env, nil
+	}
+
 	val, err := b.driver.Read()
 	if err != nil {
 		return Env{}, err

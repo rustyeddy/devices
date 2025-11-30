@@ -393,15 +393,13 @@ func TestBME280FieldInitialization(t *testing.T) {
 
 	assert.Equal(t, "test-device", bme.Name(), "Device name = %s, want test-device", bme.Name())
 
-	// In mock mode, BME280Mock is returned
+	// unified BME280 type: assert fields depending on mock flag
+	realBme := bme
+	assert.NotNil(t, realBme.DeviceBase, "Device field not initialized")
 	if devices.IsMock() {
-		_, ok := bme.(*BME280Mock)
-		assert.True(t, ok, "Expected BME280Mock type in mock mode")
+		assert.True(t, realBme.isMock, "Expected isMock to be true in mock mode")
 	} else {
-		// In non-mock mode, check BME280 fields
-		realBme, ok := bme.(*BME280)
-		assert.True(t, ok, "Expected BME280 type in non-mock mode")
-		assert.NotNil(t, realBme.DeviceBase, "Device field not initialized")
+		assert.False(t, realBme.isMock, "Expected isMock to be false in non-mock mode")
 		assert.NotNil(t, realBme.driver)
 		assert.Equal(t, "/dev/i2c-2", realBme.bus)
 		assert.Equal(t, 0x76, realBme.addr)
