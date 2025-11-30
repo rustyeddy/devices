@@ -36,7 +36,7 @@ type BME280 struct {
 	driver *bme280.Driver
 	isMock bool
 	mu     sync.Mutex // protects Env fields from concurrent access
-	env
+	env    Env
 }
 
 var (
@@ -112,7 +112,7 @@ func New(id, bus string, addr int) (b *BME280, err error) {
 
 	// initialize default mock values (will be used in Open/Get when isMock)
 	if b.isMock {
-		b.Env = defaultMockEnv()
+		b.env = defaultMockEnv()
 	}
 
 	return b, nil
@@ -157,7 +157,7 @@ func (b *BME280) Close() error {
 func (b *BME280) Set(v Env) error {
 	if b.isMock {
 		b.mu.Lock()
-		b.Env = v
+		b.env = v
 		b.mu.Unlock()
 		return nil
 	}
@@ -171,10 +171,10 @@ func (b *BME280) Get() (resp Env, err error) {
 	if b.isMock {
 		b.mu.Lock()
 		// mutate stored values slightly to simulate readings
-		b.Env.Temperature += 0.1
-		b.Env.Humidity += 0.02
-		b.Env.Pressure += 0.001
-		resp = b.Env
+		b.env.Temperature += 0.1
+		b.env.Humidity += 0.02
+		b.env.Pressure += 0.001
+		resp = b.env
 		b.mu.Unlock()
 		return resp, nil
 	}
