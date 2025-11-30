@@ -229,9 +229,9 @@ func (b *BME280Mock) Close() error {
 
 func (b *BME280Mock) Get() (Env, error) {
 	// Return stored values (set via Set() or defaults from Open())
-	b.Temperature += 0.1
-	b.Humidity += 0.02
-	b.Pressure += 0.001
+	b.Env.Temperature += 0.1
+	b.Env.Humidity += 0.02
+	b.Env.Pressure += 0.001
 	// Return an immutable copy to avoid race conditions
 	return Env{
 		Temperature: b.Env.Temperature,
