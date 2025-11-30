@@ -86,7 +86,7 @@ func DefaultConfig() BME280Config {
 // Create a new BME280 at the give bus and address. Defaults are
 // typically /dev/i2c-1 address 0x99
 // func New(id, bus string, addr int) (*BME280, error) {
-func New(id, bus string, addr int) (b devices.Device[Env], err error) {
+func New(id, bus string, addr int) (b *BME280, err error) {
 	if devices.IsMock() {
 		b = &BME280Mock{
 			Env:        Env{},
