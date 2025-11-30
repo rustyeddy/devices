@@ -117,14 +117,6 @@ func (b *BME280) Name() string {
 // ready for reading
 func (b *BME280) Open() error {
 	if b.isMock {
-		// ensure defaults are initialized
-		if b.Env.Temperature == 0 && b.Env.Pressure == 0 && b.Env.Humidity == 0 {
-			b.Env = Env{
-				Temperature: 50.12,
-				Pressure:    900.34,
-				Humidity:    77.56,
-			}
-		}
 		return nil
 	}
 
