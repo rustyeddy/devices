@@ -8,8 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/rustyeddy/otto/messanger"
 )
 
 type Type uint8
@@ -69,7 +67,7 @@ type Device[T any] interface {
 	TickHandler() *func(time.Time)
 	StartTicker(period time.Duration, f *func(time.Time))
 	RegisterEventHandler(f func(evt *DeviceEvent))
-	HandleMsg(msg *messanger.Msg) error
+	HandleMsg(msg any) error
 
 	String() string
 }
@@ -152,6 +150,6 @@ func (d *DeviceBase[T]) TickHandler() *func(time.Time) {
 	return d.tickHandler
 }
 
-func (d *DeviceBase[T]) HandleMsg(msg *messanger.Msg) error {
+func (d *DeviceBase[T]) HandleMsg(msg any) error {
 	return ErrNotImplemented
 }

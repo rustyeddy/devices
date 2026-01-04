@@ -1,9 +1,10 @@
 package relay
 
 import (
+	"errors"
+
 	"github.com/rustyeddy/devices"
 	"github.com/rustyeddy/devices/drivers"
-	"github.com/rustyeddy/otto/messanger"
 )
 
 type Relay struct {
@@ -32,14 +33,24 @@ func (r *Relay) Set(v bool) error {
 	return r.Pin.Set(v)
 }
 
-func (r *Relay) HandleMsg(msg *messanger.Msg) error {
-	dataStr := string(msg.Data)
-	switch dataStr {
-	case "on":
-		return r.Set(true)
-	case "off":
-		return r.Set(false)
+func (r *Relay) HandleMsg(data any) error {
+	switch data.(type) {
+	case string:
+		datastr := data.(string)
+		switch datastr {
+		case "on":
+			return r.Set(true)
+		case "off":
+			return r.Set(false)
+		default:
+			return errors.New("unknown data type")
+		}
+
+	case bool:
+		r.Set(data.(bool))
+
 	default:
-		return nil
+		return errors.New("unsupported data type")
 	}
+	return nil
 }
