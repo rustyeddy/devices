@@ -31,6 +31,7 @@ func (e *Env) JSON() ([]byte, error) {
 // It defaults to address 0x77 and implements the device.Device interface.
 type BME280 struct {
 	*devices.DeviceBase[Env]
+
 	bus    string
 	addr   int
 	driver *bme280.Driver

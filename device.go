@@ -67,7 +67,6 @@ type Device[T any] interface {
 	TickHandler() *func(time.Time)
 	StartTicker(period time.Duration, f *func(time.Time))
 	RegisterEventHandler(f func(evt *DeviceEvent))
-	HandleMsg(msg any) error
 
 	String() string
 }
@@ -148,8 +147,4 @@ func (d *DeviceBase[T]) RegisterEventHandler(f func(evt *DeviceEvent)) {
 
 func (d *DeviceBase[T]) TickHandler() *func(time.Time) {
 	return d.tickHandler
-}
-
-func (d *DeviceBase[T]) HandleMsg(msg any) error {
-	return ErrNotImplemented
 }
