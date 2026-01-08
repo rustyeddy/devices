@@ -2,37 +2,101 @@ package gpio
 
 import (
 	"context"
+	"errors"
 
 	"github.com/rustyeddy/devices"
+	"github.com/rustyeddy/devices/drivers"
 )
 
-type Relay struct {
-	name   string
-	in     chan bool
-	out    chan bool
-	events chan devices.Event
+type RelayConfig struct {
+	Name    string
+	Factory drivers.Factory
+	Chip    string
+	Offset  int
+	Initial bool
 }
 
-func (r *Relay) Name() string                 { return r.name }
-func (r *Relay) In() chan<- bool              { return r.in }
-func (r *Relay) Out() <-chan bool             { return r.out }
-func (r *Relay) Events() <-chan devices.Event { return r.events }
+type Relay struct {
+	devices.Base
+	in  chan bool
+	out chan bool
+
+	cfg   RelayConfig
+	line  drivers.OutputLine
+	state bool
+}
+
+func NewRelay(cfg RelayConfig) *Relay {
+	return &Relay{
+		Base:  devices.NewBase(cfg.Name, 16),
+		in:    make(chan bool, 16),
+		out:   make(chan bool, 16),
+		cfg:   cfg,
+		state: cfg.Initial,
+	}
+}
+
+func (r *Relay) In() chan<- bool  { return r.in }
+func (r *Relay) Out() <-chan bool { return r.out }
+
+func (r *Relay) Descriptor() devices.Descriptor {
+	return devices.Descriptor{
+		Name:      r.Name(),
+		Kind:      "relay",
+		ValueType: "bool",
+		Access:    devices.ReadWrite,
+		Tags:      []string{"gpio", "output"},
+		Attributes: map[string]string{
+			"chip":   r.cfg.Chip,
+			"offset": itoa(r.cfg.Offset),
+		},
+	}
+}
 
 func (r *Relay) Run(ctx context.Context) error {
-	defer close(r.out)
-	defer close(r.events)
+	r.Emit(devices.EventOpen, "run", nil, nil)
 
-	state := false
+	if r.cfg.Factory == nil {
+		err := errors.New("relay factory is nil")
+		r.Emit(devices.EventError, "factory missing", err, nil)
+		return err
+	}
+
+	line, err := r.cfg.Factory.OpenOutput(r.cfg.Chip, r.cfg.Offset, r.state)
+	if err != nil {
+		r.Emit(devices.EventError, "open output failed", err, nil)
+		return err
+	}
+	r.line = line
+
+	// publish initial state immediately
+	select {
+	case r.out <- r.state:
+	default:
+	}
+
+	defer func() {
+		_ = r.line.Close()
+		close(r.out)
+		r.Emit(devices.EventClose, "stop", nil, nil)
+		r.CloseEvents()
+	}()
+
 	for {
 		select {
 		case v := <-r.in:
-			state = v
-			// apply GPIO write
+			r.state = v
+
+			if err := r.line.Write(v); err != nil {
+				r.Emit(devices.EventError, "write failed", err, nil)
+				continue
+			}
+
 			select {
-			case r.out <- state:
+			case r.out <- r.state:
 			default:
 			}
-			r.events <- devices.Event{Device: r.name, Kind: devices.EventInfo, Msg: "set"}
+			r.Emit(devices.EventInfo, "set", nil, map[string]string{"value": boolToStr(v)})
 
 		case <-ctx.Done():
 			return nil
@@ -40,32 +104,9 @@ func (r *Relay) Run(ctx context.Context) error {
 	}
 }
 
-func NewRelay(name string) *Relay {
-	return &Relay{
-		name:   name,
-		in:     make(chan bool),
-		out:    make(chan bool),
-		events: make(chan devices.Event),
+func boolToStr(v bool) string {
+	if v {
+		return "true"
 	}
+	return "false"
 }
-
-// func New(name string, index int) (*Relay, error) {
-// 	gpio := drivers.GetGPIO[bool]()
-// 	p, err := gpio.SetPin(name, index, drivers.PinInput)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	relay := &Relay{
-// 		DeviceBase: devices.NewDeviceBase[bool](name),
-// 		Pin:        p,
-// 	}
-// 	return relay, nil
-// }
-
-// func (r *Relay) Get() (bool, error) {
-// 	return r.Pin.Get()
-// }
-
-// func (r *Relay) Set(v bool) error {
-// 	return r.Pin.Set(v)
-// }

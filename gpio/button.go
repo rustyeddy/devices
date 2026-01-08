@@ -5,52 +5,150 @@ import (
 	"time"
 
 	"github.com/rustyeddy/devices"
+	"github.com/rustyeddy/devices/drivers"
 )
 
-type Button struct {
-	name   string
-	out    chan bool
-	events chan devices.Event
+type ButtonConfig struct {
+	Name     string
+	Factory  drivers.Factory
+	Chip     string // default "gpiochip0" on linux
+	Offset   int
+	Bias     drivers.Bias
+	Edge     drivers.Edge
+	Debounce time.Duration
 }
 
-func (b *Button) Name() string                 { return b.name }
-func (b *Button) Out() <-chan bool             { return b.out }
-func (b *Button) Events() <-chan devices.Event { return b.events }
+type Button struct {
+	devices.Base
+	out chan bool
+
+	cfg  ButtonConfig
+	line drivers.InputLine
+}
+
+func NewButton(cfg ButtonConfig) *Button {
+	if cfg.Debounce == 0 {
+		cfg.Debounce = 30 * time.Millisecond
+	}
+	if cfg.Edge == "" {
+		cfg.Edge = drivers.EdgeBoth
+	}
+	if cfg.Bias == "" {
+		cfg.Bias = drivers.BiasPullUp
+	}
+	return &Button{
+		Base: devices.NewBase(cfg.Name, 16),
+		out:  make(chan bool, 16),
+		cfg:  cfg,
+	}
+}
+
+func (b *Button) Out() <-chan bool { return b.out }
+
+func (b *Button) Descriptor() devices.Descriptor {
+	return devices.Descriptor{
+		Name:      b.Name(),
+		Kind:      "button",
+		ValueType: "bool",
+		Access:    devices.ReadOnly,
+		Tags:      []string{"gpio", "input"},
+		Attributes: map[string]string{
+			"chip":     b.cfg.Chip,
+			"offset":   itoa(b.cfg.Offset),
+			"bias":     string(b.cfg.Bias),
+			"edge":     string(b.cfg.Edge),
+			"debounce": b.cfg.Debounce.String(),
+		},
+	}
+}
 
 func (b *Button) Run(ctx context.Context) error {
-	defer close(b.out)
-	defer close(b.events)
+	b.Emit(devices.EventOpen, "run", nil, nil)
 
-	b.events <- devices.Event{Device: b.name, Kind: devices.EventOpen, Time: time.Now()}
+	if b.cfg.Factory == nil {
+		err := devicesErr("button factory is nil")
+		b.Emit(devices.EventError, "factory missing", err, nil)
+		return err
+	}
+
+	line, err := b.cfg.Factory.OpenInput(b.cfg.Chip, b.cfg.Offset, b.cfg.Edge, b.cfg.Bias, b.cfg.Debounce)
+	if err != nil {
+		b.Emit(devices.EventError, "open input failed", err, nil)
+		return err
+	}
+	b.line = line
+
+	defer func() {
+		_ = b.line.Close()
+		close(b.out)
+		b.Emit(devices.EventClose, "stop", nil, nil)
+		b.CloseEvents()
+	}()
+
+	// Emit initial state so MQTT state is meaningful immediately.
+	initial, err := b.line.Read()
+	if err == nil {
+		select {
+		case b.out <- initial:
+		default:
+		}
+	}
+
+	evCh, err := b.line.Events(ctx)
+	if err != nil {
+		b.Emit(devices.EventError, "events failed", err, nil)
+		return err
+	}
+
+	var state = initial
+	var last time.Time
 
 	for {
 		select {
-		case <-ctx.Done():
-			b.events <- devices.Event{Device: b.name, Kind: devices.EventClose, Time: time.Now()}
-			return nil
+		case ev, ok := <-evCh:
+			if !ok {
+				return nil
+			}
 
-			// hardware polling / interrupt handler here
+			// Extra debounce guard (kernel debounce may already handle it, but harmless)
+			if b.cfg.Debounce > 0 && !last.IsZero() && ev.Time.Sub(last) < b.cfg.Debounce {
+				continue
+			}
+			last = ev.Time
+
+			state = ev.Value
+			select {
+			case b.out <- state:
+			default:
+			}
+
+			b.Emit(devices.EventEdge, "edge", nil, map[string]string{"edge": string(ev.Edge)})
+
+		case <-ctx.Done():
+			return nil
 		}
 	}
 }
 
-func NewButton(name string) *Button {
-	return &Button{
-		name:   name,
-		out:    make(chan bool),
-		events: make(chan devices.Event),
+func itoa(n int) string {
+	if n == 0 {
+		return "0"
 	}
+	sign := ""
+	if n < 0 {
+		sign = "-"
+		n = -n
+	}
+	var buf [12]byte
+	i := len(buf)
+	for n > 0 {
+		i--
+		buf[i] = byte('0' + (n % 10))
+		n /= 10
+	}
+	return sign + string(buf[i:])
 }
 
-// func New(name string, index int, opts ...drivers.PinOptions) (*Button, error) {
-// 	gpio := drivers.GetGPIO[bool]()
-// 	p, err := gpio.SetPin(name, index, drivers.PinInput)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	b := &Button{
-// 		DeviceBase: devices.NewDeviceBase[bool](name),
-// 		Pin:        p,
-// 	}
-// 	return b, nil
-// }
+type devicesErr string
+
+func (e devicesErr) Error() string { return string(e) }
