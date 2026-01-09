@@ -1,5 +1,7 @@
 package devices
 
+// AccessMode indicates the mode of the device, possible modes are
+// read-only, write-only and read-write
 type AccessMode string
 
 const (
@@ -8,10 +10,13 @@ const (
 	ReadWrite AccessMode = "rw"
 )
 
+// Described defines the Descriptor interface
 type Described interface {
 	Descriptor() Descriptor
 }
 
+// Descriptor describe the various aspects of the device it
+// represents.
 type Descriptor struct {
 	Name       string
 	Kind       string // "relay", "button", "temperature", "gps"

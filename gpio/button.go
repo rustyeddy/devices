@@ -85,7 +85,7 @@ func (b *Button) Run(ctx context.Context) error {
 		b.CloseEvents()
 	}()
 
-	// Emit initial state so MQTT state is meaningful immediately.
+	// Emit initial state so MQTT state is meaningful immediately.  Todo, what if
 	initial, err := b.line.Read()
 	if err == nil {
 		select {
