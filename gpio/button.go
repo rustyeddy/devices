@@ -8,6 +8,7 @@ import (
 	"github.com/rustyeddy/devices/drivers"
 )
 
+// ButtonConfig configures a GPIO button.
 type ButtonConfig struct {
 	Name     string
 	Factory  drivers.Factory
@@ -18,6 +19,7 @@ type ButtonConfig struct {
 	Debounce time.Duration
 }
 
+// Button reports a GPIO input line as a boolean stream.
 type Button struct {
 	devices.Base
 	out chan bool
@@ -26,6 +28,7 @@ type Button struct {
 	line drivers.InputLine
 }
 
+// NewButton constructs a Button with defaults applied.
 func NewButton(cfg ButtonConfig) *Button {
 	if cfg.Debounce == 0 {
 		cfg.Debounce = 30 * time.Millisecond
@@ -43,8 +46,10 @@ func NewButton(cfg ButtonConfig) *Button {
 	}
 }
 
+// Out returns the button state stream.
 func (b *Button) Out() <-chan bool { return b.out }
 
+// Descriptor returns the button metadata.
 func (b *Button) Descriptor() devices.Descriptor {
 	return devices.Descriptor{
 		Name:      b.Name(),
@@ -62,6 +67,7 @@ func (b *Button) Descriptor() devices.Descriptor {
 	}
 }
 
+// Run opens the GPIO line and emits button state changes.
 func (b *Button) Run(ctx context.Context) error {
 	b.Emit(devices.EventOpen, "run", nil, nil)
 

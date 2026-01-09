@@ -5,13 +5,14 @@ import (
 	"time"
 )
 
-// Base struct for the devices package with internal structures.
+// Base provides device name and event publishing helpers.
 type Base struct {
 	name   string
 	events chan Event
 	once   sync.Once
 }
 
+// NewBase constructs a Base with a buffered event channel.
 func NewBase(name string, eventBuf int) Base {
 	if eventBuf <= 0 {
 		eventBuf = 16
@@ -22,17 +23,17 @@ func NewBase(name string, eventBuf int) Base {
 	}
 }
 
+// Name returns the device name.
 func (b *Base) Name() string {
 	return b.name
 }
 
+// Events returns the event stream channel.
 func (b *Base) Events() <-chan Event {
 	return b.events
 }
 
-// Emit tries to publish an event without deadlocking.  For noisy
-// devices, non-blocking is a good default.  For critical events, you
-// can call EmitBlocking (below).
+// Emit publishes an event without blocking.
 func (b *Base) Emit(kind EventKind, msg string, err error, meta map[string]string) {
 	e := Event{
 		Device: b.name,
@@ -49,8 +50,7 @@ func (b *Base) Emit(kind EventKind, msg string, err error, meta map[string]strin
 	}
 }
 
-// EmitBlocking also will emit an event however it will block for
-// critical events
+// EmitBlocking publishes an event and blocks until delivered.
 func (b *Base) EmitBlocking(kind EventKind, msg string, err error, meta map[string]string) {
 	b.events <- Event{
 		Device: b.name,
@@ -62,7 +62,7 @@ func (b *Base) EmitBlocking(kind EventKind, msg string, err error, meta map[stri
 	}
 }
 
-// CloseEvents safely closes the events channel
+// CloseEvents closes the events channel once.
 func (b *Base) CloseEvents() {
 	b.once.Do(func() { close(b.events) })
 }

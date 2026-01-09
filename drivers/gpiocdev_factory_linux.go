@@ -10,10 +10,13 @@ import (
 	"github.com/warthog618/go-gpiocdev"
 )
 
+// GPIOCDevFactory opens GPIO lines using go-gpiocdev.
 type GPIOCDevFactory struct{}
 
+// NewGPIOCDevFactory returns a GPIOCDev-backed Factory.
 func NewGPIOCDevFactory() Factory { return &GPIOCDevFactory{} }
 
+// OpenInput requests a GPIO line for edge events.
 func (f *GPIOCDevFactory) OpenInput(chip string, offset int, edge Edge, bias Bias, debounce time.Duration) (InputLine, error) {
 	if chip == "" {
 		chip = "gpiochip0"
@@ -77,6 +80,7 @@ func (f *GPIOCDevFactory) OpenInput(chip string, offset int, edge Edge, bias Bia
 	}, nil
 }
 
+// OpenOutput requests a GPIO line for output.
 func (f *GPIOCDevFactory) OpenOutput(chip string, offset int, initial bool) (OutputLine, error) {
 	if chip == "" {
 		chip = "gpiochip0"
@@ -95,6 +99,7 @@ func (f *GPIOCDevFactory) OpenOutput(chip string, offset int, initial bool) (Out
 	return &gpiocdevOutputLine{line: line}, nil
 }
 
+// gpiocdevInputLine wraps a gpiocdev Line for input events.
 type gpiocdevInputLine struct {
 	line *gpiocdev.Line
 	edge Edge
@@ -142,7 +147,7 @@ func (l *gpiocdevInputLine) Events(ctx context.Context) (<-chan LineEvent, error
 
 				val, _ := l.Read() // best effort; some kernels include state in event, but simplest is re-read
 				select {
-//				case out <- LineEvent{Time: evt.Timestamp, Edge: edge, Value: val}:
+				//				case out <- LineEvent{Time: evt.Timestamp, Edge: edge, Value: val}:
 				case out <- LineEvent{Time: time.Now(), Edge: edge, Value: val}:
 				default:
 					// drop if consumer slow
@@ -170,6 +175,7 @@ func (l *gpiocdevInputLine) Close() error {
 	return nil
 }
 
+// gpiocdevOutputLine wraps a gpiocdev Line for output writes.
 type gpiocdevOutputLine struct {
 	line *gpiocdev.Line
 }

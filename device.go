@@ -15,19 +15,19 @@ type Device interface {
 	Events() <-chan Event
 }
 
-// Source emits typed values (sensors, buttons, GPS fixes, etc.)
+// Source emits typed values (sensors, buttons, GPS fixes, etc.).
 type Source[T any] interface {
 	Device
 	Out() <-chan T
 }
 
-// Sink consumes typed commands (relay, motor, LED, PWM, etc.)
+// Sink consumes typed commands (relay, motor, LED, PWM, etc.).
 type Sink[T any] interface {
 	Device
 	In() chan<- T
 }
 
-// Duplex does both (e.g. dimmer, motor controller).
+// Duplex is both a Source and a Sink.
 type Duplex[T any] interface {
 	Source[T]
 	Sink[T]
