@@ -147,7 +147,8 @@ func (l *gpiocdevInputLine) Events(ctx context.Context) (<-chan LineEvent, error
 
 				val, _ := l.Read() // best effort; some kernels include state in event, but simplest is re-read
 				select {
-				//				case out <- LineEvent{Time: evt.Timestamp, Edge: edge, Value: val}:
+				// TODO extract the time.Time value from the duration provided below
+				// case out <- LineEvent{Time: evt.Timestamp, Edge: edge, Value: val}:
 				case out <- LineEvent{Time: time.Now(), Edge: edge, Value: val}:
 				default:
 					// drop if consumer slow
