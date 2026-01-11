@@ -1,22 +1,23 @@
 package devices
 
-// AccessMode indicates the mode of the device, possible modes are
-// read-only, write-only and read-write
+// AccessMode indicates read/write capabilities for a device.
 type AccessMode string
 
 const (
-	ReadOnly  AccessMode = "ro"
+	// ReadOnly marks devices that can only be read.
+	ReadOnly AccessMode = "ro"
+	// WriteOnly marks devices that can only be written.
 	WriteOnly AccessMode = "wo"
+	// ReadWrite marks devices that can be read and written.
 	ReadWrite AccessMode = "rw"
 )
 
-// Described defines the Descriptor interface
+// Described exposes a Descriptor for a device.
 type Described interface {
 	Descriptor() Descriptor
 }
 
-// Descriptor describe the various aspects of the device it
-// represents.
+// Descriptor describes static device metadata.
 type Descriptor struct {
 	Name       string
 	Kind       string // "relay", "button", "temperature", "gps"

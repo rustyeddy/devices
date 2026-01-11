@@ -8,6 +8,7 @@ import (
 	"github.com/rustyeddy/devices/drivers"
 )
 
+// RelayConfig configures a GPIO relay.
 type RelayConfig struct {
 	Name    string
 	Factory drivers.Factory
@@ -16,6 +17,7 @@ type RelayConfig struct {
 	Initial bool
 }
 
+// Relay controls a GPIO output line.
 type Relay struct {
 	devices.Base
 	in  chan bool
@@ -26,6 +28,7 @@ type Relay struct {
 	state bool
 }
 
+// NewRelay constructs a Relay with the given configuration.
 func NewRelay(cfg RelayConfig) *Relay {
 	return &Relay{
 		Base:  devices.NewBase(cfg.Name, 16),
@@ -36,9 +39,13 @@ func NewRelay(cfg RelayConfig) *Relay {
 	}
 }
 
-func (r *Relay) In() chan<- bool  { return r.in }
+// In returns the command channel for the relay.
+func (r *Relay) In() chan<- bool { return r.in }
+
+// Out returns the state stream for the relay.
 func (r *Relay) Out() <-chan bool { return r.out }
 
+// Descriptor returns the relay metadata.
 func (r *Relay) Descriptor() devices.Descriptor {
 	return devices.Descriptor{
 		Name:      r.Name(),
@@ -53,6 +60,7 @@ func (r *Relay) Descriptor() devices.Descriptor {
 	}
 }
 
+// Run opens the GPIO line and applies relay commands.
 func (r *Relay) Run(ctx context.Context) error {
 	r.Emit(devices.EventOpen, "run", nil, nil)
 

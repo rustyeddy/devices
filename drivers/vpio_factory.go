@@ -6,17 +6,20 @@ import (
 	"time"
 )
 
+// VPIOFactory provides in-memory GPIO lines for tests.
 type VPIOFactory struct {
 	mu    sync.Mutex
 	lines map[string]*vpioLine
 }
 
+// NewVPIOFactory constructs an in-memory GPIO factory for tests.
 func NewVPIOFactory() *VPIOFactory {
 	return &VPIOFactory{lines: map[string]*vpioLine{}}
 }
 
 func (f *VPIOFactory) key(chip string, offset int) string { return chip + ":" + itoa(offset) }
 
+// OpenInput returns a virtual input line backed by memory.
 func (f *VPIOFactory) OpenInput(chip string, offset int, edge Edge, bias Bias, debounce time.Duration) (InputLine, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -35,6 +38,7 @@ func (f *VPIOFactory) OpenInput(chip string, offset int, edge Edge, bias Bias, d
 	return l, nil
 }
 
+// OpenOutput returns a virtual output line backed by memory.
 func (f *VPIOFactory) OpenOutput(chip string, offset int, initial bool) (OutputLine, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
