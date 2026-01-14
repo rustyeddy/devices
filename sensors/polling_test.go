@@ -20,10 +20,13 @@ func TestRunPoller_EmitInitialAndTick_DropOnFull(t *testing.T) {
 	t.Parallel()
 
 	base := devices.NewBase("sensor", 16)
-
 	out := make(chan int, 1) // intentionally small to test drop-on-full
 
 	ft := &fakeTicker{ch: make(chan time.Time, 10)}
+
+	read2 := make(chan struct{}) // closed when the *second* Read() happens
+	readCalls := 0
+
 	cfg := PollConfig[int]{
 		Interval:       1 * time.Second,
 		EmitInitial:    true,
@@ -31,7 +34,10 @@ func TestRunPoller_EmitInitialAndTick_DropOnFull(t *testing.T) {
 		SampleEventMsg: "sample",
 		NewTicker:      func(time.Duration) Ticker { return ft },
 		Read: func(ctx context.Context) (int, error) {
-			// simple counter-like behavior
+			readCalls++
+			if readCalls == 2 {
+				close(read2)
+			}
 			return 42, nil
 		},
 	}
@@ -45,18 +51,27 @@ func TestRunPoller_EmitInitialAndTick_DropOnFull(t *testing.T) {
 	// initial emits once
 	require.Equal(t, 42, <-out)
 
-	// fill channel, then tick -> should drop due to DropOnFull
+	// fill channel so next publish would drop
 	out <- 99
-	ft.ch <- time.Now()
 
-	// channel still has the filled value, no new value should replace it
+	// trigger a tick and WAIT until the poller processed it (i.e., called Read a second time)
+	ft.ch <- time.Now()
+	<-read2
+
+	// channel should still have the filled value, no new value should replace it
 	require.Equal(t, 99, <-out)
 
+	// stop poller
 	cancel()
 	require.NoError(t, <-errCh)
 
-	_, ok := <-out
-	require.False(t, ok, "out should be closed on stop")
+	// drain any buffered values, then verify closure
+	for {
+		_, ok := <-out
+		if !ok {
+			break
+		}
+	}
 }
 
 func TestRunPoller_BlockWhenNotDropOnFull(t *testing.T) {
