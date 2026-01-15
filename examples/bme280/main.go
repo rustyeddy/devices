@@ -1,3 +1,6 @@
+//go:build hardware
+// +build hardware
+
 package main
 
 import (
@@ -12,7 +15,6 @@ import (
 )
 
 func main() {
-	// Root context canceled on SIGINT / SIGTERM
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -26,14 +28,13 @@ func main() {
 
 	dev := bme280.New(bme280.Config{
 		Name:        "env",
-		Bus:         "",   // default I²C bus (periph: first available)
-		Addr:        0x76, // change to 0x77 if needed
+		Bus:         "",   // default periph bus
+		Addr:        0x76, // or 0x77
 		Interval:    1 * time.Second,
 		EmitInitial: true,
 		DropOnFull:  true,
 	})
 
-	// Run device in background
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- dev.Run(ctx)
@@ -45,10 +46,8 @@ func main() {
 		select {
 		case v, ok := <-dev.Out():
 			if !ok {
-				// device stopped
 				return
 			}
-
 			fmt.Printf(
 				"Temp: %.2f °C | Humidity: %.1f %%RH | Pressure: %.0f Pa\n",
 				v.Temperature,
