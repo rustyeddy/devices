@@ -1,48 +1,65 @@
 # AGENTS.md — devices
 
-## Purpose
-This repo contains device interfaces, drivers, mocks/fakes, and shared utilities.
-Keep orchestration/runtime logic out of this repo.
+> 📘 **Full instructions**: See [.github/copilot-instructions.md](.github/copilot-instructions.md) for detailed guidelines, examples, and best practices.
 
-## Non-goals
-- No integration tests that require real hardware or external services.
-- No breaking API changes unless explicitly requested.
+## Quick Reference
 
-## Go conventions
-- Run `gofmt` on all changed files.
-- Keep interfaces minimal and stable.
-- Drivers should be deterministic; use fakes/mocks where needed.
+### Purpose
+This repo contains device interfaces, drivers, mocks/fakes, and shared utilities for Go-based hardware abstractions. Keep orchestration/runtime logic out of this repo.
 
-## Testing (required)
-Use **testify**:
-- Prefer `require` for preconditions and must-pass checks.
-- Use `assert` for additional verification.
-- Use `testify/mock` sparingly; prefer simple fakes when possible.
+### Essential Commands
+```bash
+go test ./...           # Run all tests
+gofmt -w .             # Format code (required)
+make test              # Run tests with coverage
+make build             # Build project
+```
 
-Test rules:
-- Hermetic tests only (no network, no serial/GPIO).
-- No `time.Sleep` synchronization.
-- Use `t.TempDir()` for any filesystem needs.
-- If a goroutine is started in a test, ensure deterministic shutdown (context/close channels).
-- Prefer table-driven tests and explicit edge cases (zero values, error paths).
+### Key Principles
+- **Hermetic tests only**: No real hardware, network, or external dependencies
+- **Always run `gofmt`** before committing
+- **Keep interfaces minimal** and stable
+- **Drivers must be deterministic** - use fakes/mocks for testing
 
-Commands:
-- Run: `go test ./...`
+## Testing Requirements
 
-## What to test first (priority)
-1. Interface behavior: Get/Set semantics, error handling, and invariants.
-2. Driver logic: conversions, bounds, state transitions.
-3. Serialization/encoding if present.
-4. Concurrency safety (if any): races, shutdown behavior.
+### Framework: testify
+- Use `require` for must-pass checks (stops on failure)
+- Use `assert` for additional checks (continues on failure)
+- Avoid `testify/mock` - prefer simple fakes
 
-## Review checklist
-- Are tests deterministic and fast?
-- Any hidden dependencies on system state or hardware? Remove them.
-- Are mocks/fakes minimal and readable?
-- No accidental coupling to OttO runtime concepts.
+### Critical Rules
+- ❌ No `time.Sleep` - use channels/contexts instead
+- ❌ No real hardware/GPIO/network access
+- ✅ Use `t.TempDir()` for filesystem tests
+- ✅ Use `t.Parallel()` for independent tests
+- ✅ Ensure goroutines shut down cleanly (context/channels)
+- ✅ Table-driven tests with edge cases
 
-## Commit guidance (if committing)
-Small commits:
-- `test: <pkg> baseline`
-- `test: add fake <device>`
-- `docs: godoc for <pkg>`
+### Test Priority
+1. Interface behavior (Get/Set, errors, invariants)
+2. Driver logic (conversions, bounds, state)
+3. Serialization/encoding
+4. Concurrency safety (races, shutdown)
+
+## Non-Goals
+- ❌ No integration tests requiring real hardware
+- ❌ No breaking API changes (unless requested)
+- ❌ No coupling to OttO runtime
+
+## Quick Checklist
+Before committing:
+- [ ] Tests pass: `go test ./...`
+- [ ] Code formatted: `gofmt -w .`
+- [ ] Tests are hermetic (no hardware/network)
+- [ ] No `time.Sleep` in tests
+- [ ] Goroutines shut down cleanly
+- [ ] Mocks/fakes are minimal
+
+## Commit Format
+```
+test: <pkg> baseline
+feat: add <device> driver
+fix: correct <issue> in <component>
+docs: update godoc for <pkg>
+```
