@@ -198,6 +198,26 @@ func (g *GTU7) Run(ctx context.Context) error {
 				}
 			}
 		}
+		if fix, ok := parseGPVTG(line); ok {
+			// Merge in fields sourced from VTG (speed/course).
+			if !math.IsNaN(fix.SpeedKnots) {
+				last.SpeedKnots = fix.SpeedKnots
+				last.SpeedMPS = fix.SpeedMPS
+			}
+			if !math.IsNaN(fix.CourseDeg) {
+				last.CourseDeg = fix.CourseDeg
+			}
+
+			// Only emit once we have a usable position.
+			if haveFix {
+				select {
+				case g.out <- last:
+				default:
+					// drop if slow consumer
+				}
+			}
+		}
+
 	}
 }
 
@@ -264,6 +284,57 @@ func parseGPRMC(line string) (GPSFix, bool) {
 		SpeedKnots: sogKnots,
 		SpeedMPS:   sogMPS,
 		CourseDeg:  cogDeg,
+	}, true
+}
+
+// parseGPVTG extracts speed/course from a $GPVTG sentence.
+// Returns ok=false for non-GPVTG lines or parse failures.
+func parseGPVTG(line string) (GPSFix, bool) {
+	if i := strings.IndexByte(line, '*'); i >= 0 {
+		line = line[:i]
+	}
+
+	parts := strings.Split(line, ",")
+	if len(parts) < 9 {
+		return GPSFix{}, false
+	}
+	if parts[0] != "$GPVTG" && parts[0] != "$GNVTG" {
+		return GPSFix{}, false
+	}
+
+	courseDeg := math.NaN()
+	speedKnots := math.NaN()
+	speedMPS := math.NaN()
+
+	// Field map (common):
+	// 1: course true, 2: "T", 3: course magnetic, 4: "M",
+	// 5: speed knots, 6: "N", 7: speed km/h, 8: "K" (then optional mode).
+	if parts[1] != "" {
+		if v, err := strconv.ParseFloat(parts[1], 64); err == nil {
+			courseDeg = v
+		}
+	}
+	if parts[5] != "" {
+		if v, err := strconv.ParseFloat(parts[5], 64); err == nil {
+			speedKnots = v
+			speedMPS = v * 0.514444
+		}
+	} else if parts[7] != "" {
+		// If knots missing, derive from km/h.
+		if v, err := strconv.ParseFloat(parts[7], 64); err == nil {
+			speedMPS = v * (1000.0 / 3600.0)
+			speedKnots = speedMPS / 0.514444
+		}
+	}
+
+	if math.IsNaN(courseDeg) && math.IsNaN(speedKnots) {
+		return GPSFix{}, false
+	}
+
+	return GPSFix{
+		SpeedKnots: speedKnots,
+		SpeedMPS:   speedMPS,
+		CourseDeg:  courseDeg,
 	}, true
 }
 
