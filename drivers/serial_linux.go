@@ -97,14 +97,11 @@ func configureTermios(fd int, baud int, settleDelay time.Duration) error {
 
 	// Apply settle delay if configured. Default to 10ms if not set.
 	// Hardware may need time to stabilize after terminal reconfiguration.
-	delay := settleDelay
-	if delay == 0 {
-		delay = 10 * time.Millisecond
-	} else if delay < 0 {
-		delay = 0 // Negative value disables the delay
+	if settleDelay == 0 {
+		settleDelay = 10 * time.Millisecond
 	}
-	if delay > 0 {
-		time.Sleep(delay)
+	if settleDelay > 0 {
+		time.Sleep(settleDelay)
 	}
 	return nil
 }
