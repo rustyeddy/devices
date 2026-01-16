@@ -3,6 +3,7 @@
 package drivers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -106,7 +107,7 @@ func TestBaudToUnixAllSupportedRates(t *testing.T) {
 	supportedRates := []int{4800, 9600, 19200, 38400, 57600, 115200}
 
 	for _, baud := range supportedRates {
-		t.Run(string(rune(baud)), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d", baud), func(t *testing.T) {
 			speed, err := baudToUnix(baud)
 			require.NoError(t, err, "supported baud rate %d should not error", baud)
 			assert.NotZero(t, speed, "baud rate %d should return non-zero speed", baud)
