@@ -25,6 +25,18 @@ type GPSFix struct {
 	Satellites int
 	HDOP      float64
 	UTCTime   string // HHMMSS.SS as emitted by the receiver
+
+	// Additional values typically provided by RMC/VTG.
+	// SpeedKnots is speed over ground in knots.
+	// SpeedMPS is speed over ground in meters/sec.
+	SpeedKnots float64
+	SpeedMPS   float64
+	// CourseDeg is course over ground in degrees.
+	CourseDeg float64
+	// Date is DDMMYY (per RMC).
+	Date string
+	// Status is RMC status (e.g., "A"=active, "V"=void).
+	Status string
 }
 
 // GTU7Config configures a Vegetronix GT-U7 GPS (NMEA) reader.
@@ -80,6 +92,18 @@ func (g *GTU7) Run(ctx context.Context) error {
 	defer close(g.out)
 	defer g.CloseEvents()
 
+	// Maintain a best-effort merged view across sentences.
+	last := GPSFix{
+		Lat:        math.NaN(),
+		Lon:        math.NaN(),
+		AltitudeM:  math.NaN(),
+		HDOP:       math.NaN(),
+		SpeedKnots: math.NaN(),
+		SpeedMPS:   math.NaN(),
+		CourseDeg:  math.NaN(),
+	}
+	haveFix := false
+
 	var (
 		r   io.Reader
 		sp  drivers.SerialPort
@@ -132,13 +156,115 @@ func (g *GTU7) Run(ctx context.Context) error {
 		}
 
 		if fix, ok := parseGPGGA(line); ok {
+			// Merge in fields sourced from GGA.
+			last.Lat = fix.Lat
+			last.Lon = fix.Lon
+			last.AltitudeM = fix.AltitudeM
+			last.Quality = fix.Quality
+			last.Satellites = fix.Satellites
+			last.HDOP = fix.HDOP
+			last.UTCTime = fix.UTCTime
+			haveFix = true
+
 			select {
-			case g.out <- fix:
+			case g.out <- last:
 			default:
 				// drop if slow consumer
 			}
+			continue
+		}
+
+		if fix, ok := parseGPRMC(line); ok {
+			// Merge in fields sourced from RMC.
+			last.Status = fix.Status
+			last.Date = fix.Date
+			last.UTCTime = fix.UTCTime
+			last.SpeedKnots = fix.SpeedKnots
+			last.SpeedMPS = fix.SpeedMPS
+			last.CourseDeg = fix.CourseDeg
+			// RMC also carries position; prefer it if present.
+			if !math.IsNaN(fix.Lat) && !math.IsNaN(fix.Lon) {
+				last.Lat = fix.Lat
+				last.Lon = fix.Lon
+			}
+			haveFix = haveFix || (!math.IsNaN(last.Lat) && !math.IsNaN(last.Lon))
+
+			// Only emit once we have a usable position.
+			if haveFix {
+				select {
+				case g.out <- last:
+				default:
+					// drop if slow consumer
+				}
+			}
 		}
 	}
+}
+
+// parseGPRMC extracts speed/course (and optionally position) from a $GPRMC sentence.
+// Returns ok=false for non-GPRMC lines or parse failures.
+func parseGPRMC(line string) (GPSFix, bool) {
+	if i := strings.IndexByte(line, '*'); i >= 0 {
+		line = line[:i]
+	}
+
+	parts := strings.Split(line, ",")
+	if len(parts) < 10 {
+		return GPSFix{}, false
+	}
+	if parts[0] != "$GPRMC" && parts[0] != "$GNRMC" {
+		return GPSFix{}, false
+	}
+
+	utc := parts[1]
+	status := parts[2]
+	// A = valid, V = void
+	if status == "" {
+		return GPSFix{}, false
+	}
+	if strings.ToUpper(status) != "A" {
+		// We still surface status but treat as not-ok for emitting.
+		return GPSFix{UTCTime: utc, Status: status}, false
+	}
+
+	latRaw, latHem := parts[3], parts[4]
+	lonRaw, lonHem := parts[5], parts[6]
+	sogKnots, _ := strconv.ParseFloat(parts[7], 64)
+	cogDeg, _ := strconv.ParseFloat(parts[8], 64)
+	date := parts[9]
+
+	lat := math.NaN()
+	lon := math.NaN()
+	if latRaw != "" {
+		if v, ok := nmeaDeg(latRaw); ok {
+			lat = v
+			if strings.EqualFold(latHem, "S") {
+				lat = -lat
+			}
+		}
+	}
+	if lonRaw != "" {
+		if v, ok := nmeaDeg(lonRaw); ok {
+			lon = v
+			if strings.EqualFold(lonHem, "W") {
+				lon = -lon
+			}
+		}
+	}
+
+	// 1 knot = 0.514444 m/s
+	sogMPS := sogKnots * 0.514444
+
+	return GPSFix{
+		Lat:        lat,
+		Lon:        lon,
+		UTCTime:    utc,
+		Status:     status,
+		Date:       date,
+		SpeedKnots: sogKnots,
+		SpeedMPS:   sogMPS,
+		CourseDeg:  cogDeg,
+	}, true
 }
 
 // parseGPGGA extracts a fix from a $GPGGA sentence.
