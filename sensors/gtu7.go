@@ -41,7 +41,7 @@ type GTU7Config struct {
 type GTU7 struct {
 	name string
 	out  chan GPSFix
-	r    io.Reader
+	r    io.ReadWriteCloser
 }
 
 func NewGTU7(cfg GTU7Config) *GTU7 {
@@ -49,9 +49,14 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 		cfg.Factory = drivers.LinuxSerialFactory{}
 	}
 
-	var r io.Reader
+	var r io.ReadWriteCloser
 	if cfg.Reader != nil {
-		r = cfg.Reader
+		// Wrap test reader in a nopCloser if it doesn't implement Close
+		if rc, ok := cfg.Reader.(io.ReadWriteCloser); ok {
+			r = rc
+		} else {
+			r = nopCloser{cfg.Reader}
+		}
 	} else {
 		port, err := cfg.Factory.OpenSerial(cfg.Serial)
 		if err != nil {
@@ -79,6 +84,11 @@ func (g *GTU7) Descriptor() devices.Descriptor {
 
 func (g *GTU7) Run(ctx context.Context) error {
 	defer close(g.out)
+	defer func() {
+		if g.r != nil {
+			_ = g.r.Close()
+		}
+	}()
 
 	var last GPSFix
 	haveFix := false
@@ -294,3 +304,11 @@ func parseLatLon(lat, ns, lon, ew string) (float64, float64, error) {
 	}
 	return latVal, lonVal, nil
 }
+
+// nopCloser wraps an io.Reader with a no-op Close method.
+type nopCloser struct {
+	io.Reader
+}
+
+func (nopCloser) Close() error                      { return nil }
+func (nopCloser) Write(p []byte) (n int, err error) { return 0, errors.New("not supported") }
