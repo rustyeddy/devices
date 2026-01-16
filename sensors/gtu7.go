@@ -34,19 +34,25 @@ type GTU7Config struct {
 	Serial  drivers.SerialConfig
 	Factory drivers.SerialFactory
 
+	// Buf sizes the out channel. Default 4.
+	Buf int
+
 	// Test injection
 	Reader io.Reader
 }
 
 type GTU7 struct {
-	name string
-	out  chan GPSFix
-	r    io.Reader
+	devices.Base
+	out chan GPSFix
+	r   io.Reader
 }
 
 func NewGTU7(cfg GTU7Config) *GTU7 {
 	if cfg.Factory == nil {
 		cfg.Factory = drivers.LinuxSerialFactory{}
+	}
+	if cfg.Buf <= 0 {
+		cfg.Buf = 4
 	}
 
 	var r io.Reader
@@ -61,8 +67,8 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 	}
 
 	return &GTU7{
-		name: cfg.Name,
-		out:  make(chan GPSFix, 4),
+		Base: devices.NewBase(cfg.Name, cfg.Buf),
+		out:  make(chan GPSFix, cfg.Buf),
 		r:    r,
 	}
 }
@@ -71,14 +77,19 @@ func (g *GTU7) Out() <-chan GPSFix { return g.out }
 
 func (g *GTU7) Descriptor() devices.Descriptor {
 	return devices.Descriptor{
-		Name:      g.name,
+		Name:      g.Name(),
 		Kind:      "gps",
 		ValueType: "GPSFix",
 	}
 }
 
 func (g *GTU7) Run(ctx context.Context) error {
-	defer close(g.out)
+	g.Emit(devices.EventOpen, "run", nil, nil)
+	defer func() {
+		close(g.out)
+		g.Emit(devices.EventClose, "stop", nil, nil)
+		g.CloseEvents()
+	}()
 
 	var last GPSFix
 	haveFix := false
@@ -163,6 +174,10 @@ func (g *GTU7) emit(f GPSFix) {
 	select {
 	case g.out <- f:
 	default:
+		// Channel is full, drop the fix and emit a warning
+		g.Emit(devices.EventInfo, "gps fix dropped", nil, map[string]string{
+			"reason": "output channel full",
+		})
 	}
 }
 
