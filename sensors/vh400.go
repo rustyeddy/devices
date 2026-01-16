@@ -82,14 +82,14 @@ func (v *VH400) Descriptor() devices.Descriptor {
 		"channel": strconv.Itoa(v.cfg.Channel),
 	}
 	return devices.Descriptor{
-		Name:      v.Name(),
-		Kind:      "vh400",
-		ValueType: "float64",
-		Access:    devices.ReadOnly,
-		Unit:      "%",
-		Min:       &min,
-		Max:       &max,
-		Tags:      []string{"soil", "moisture", "analog"},
+		Name:       v.Name(),
+		Kind:       "vh400",
+		ValueType:  "float64",
+		Access:     devices.ReadOnly,
+		Unit:       "%",
+		Min:        &min,
+		Max:        &max,
+		Tags:       []string{"soil", "moisture", "analog"},
 		Attributes: attrs,
 	}
 }

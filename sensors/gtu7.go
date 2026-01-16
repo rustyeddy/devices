@@ -29,12 +29,36 @@ type GPSFix struct {
 	Date   string // DDMMYY
 }
 
+// GTU7Config configures a GTU-7 GPS module (NMEA-0183 via serial).
+//
+// The GTU-7 emits NMEA sentences (GPGGA, GPRMC, GPVTG) over a serial port.
+// This driver parses those sentences into GPSFix structs.
+//
+// Usage with a serial port:
+//
+//	gps := NewGTU7(GTU7Config{
+//		Name: "my-gps",
+//		Serial: drivers.SerialConfig{Port: "/dev/ttyUSB0", Baud: 9600},
+//	})
+//	go gps.Run(ctx)
+//	for fix := range gps.Out() {
+//		// process fix
+//	}
+//
+// Usage in tests (Reader field for test injection):
+//
+//	gps := NewGTU7(GTU7Config{
+//		Reader: strings.NewReader("$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47\n"),
+//	})
 type GTU7Config struct {
 	Name    string
 	Serial  drivers.SerialConfig
 	Factory drivers.SerialFactory
 
-	// Test injection
+	// Reader is an optional io.Reader for test injection.
+	// When non-nil, the driver reads NMEA sentences from Reader instead of opening
+	// a serial port. This allows unit tests to provide mock NMEA data via strings.NewReader
+	// or similar without requiring hardware.
 	Reader io.Reader
 }
 
