@@ -2,10 +2,12 @@ package sensors
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/rustyeddy/devices/drivers"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,4 +57,26 @@ $GPRMC,160446.00,A,3340.34121,N,11800.11332,W,7.25,123.40,160126,,,A*00
 	case <-time.After(time.Second):
 		require.FailNow(t, "run did not exit")
 	}
+}
+
+// mockSerialFactory is a test helper that returns an error when opening serial.
+type mockSerialFactory struct {
+	err error
+}
+
+func (m mockSerialFactory) OpenSerial(cfg drivers.SerialConfig) (drivers.SerialPort, error) {
+	return nil, m.err
+}
+
+func TestNewGTU7_OpenSerialError(t *testing.T) {
+	expectedErr := errors.New("failed to open serial port")
+
+	gps, err := NewGTU7(GTU7Config{
+		Serial:  drivers.SerialConfig{Port: "/dev/ttyUSB0", Baud: 9600},
+		Factory: mockSerialFactory{err: expectedErr},
+	})
+
+	require.Error(t, err)
+	require.Nil(t, gps)
+	require.Equal(t, expectedErr, err)
 }
