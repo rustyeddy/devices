@@ -57,7 +57,19 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 		if err != nil {
 			panic(err)
 		}
+
+		// Ensure we don't leak the port if a panic occurs after opening.
+		ok := false
+		defer func() {
+			if !ok {
+				if closer, canClose := port.(io.Closer); canClose {
+					_ = closer.Close()
+				}
+			}
+		}()
+
 		r = port
+		ok = true
 	}
 
 	return &GTU7{
