@@ -48,6 +48,7 @@ type GTU7Config struct {
 //		Serial: drivers.SerialConfig{Port: "/dev/ttyUSB0", Baud: 9600},
 //	}
 //	gps := NewGTU7(cfg)
+//	ctx := context.Background()
 //	go gps.Run(ctx)
 //	for fix := range gps.Out() {
 //		// Process GPS fix
@@ -55,7 +56,7 @@ type GTU7Config struct {
 //
 // Important behavioral notes:
 //   - RMC sentences take precedence over VTG for speed and course data
-//   - The Out channel is buffered (size 4); messages are dropped if the buffer is full
+//   - The Out channel is buffered (size 4); newest messages are dropped if the buffer is full
 //   - Run will close the Out channel when the context is canceled or an error occurs
 type GTU7 struct {
 	name string
