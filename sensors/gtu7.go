@@ -274,7 +274,7 @@ func stripChecksum(s string) string {
 
 func parseLatLon(lat, ns, lon, ew string) (float64, float64, error) {
 	if lat == "" || lon == "" {
-		return 0, 0, errors.New("empty")
+		return 0, 0, errors.New("latitude or longitude is empty")
 	}
 	la, err := strconv.ParseFloat(lat, 64)
 	if err != nil {
