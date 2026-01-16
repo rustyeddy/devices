@@ -2,10 +2,6 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/jonboulle/clockwork v0.5.0 h1:Hyh9A8u51kptdkR+cqRpT1EebBwTn1oK9YfGYbdFz6I=
 github.com/jonboulle/clockwork v0.5.0/go.mod h1:3mZlmanh0g2NDKO5TWZVJAfofYk64M7XN3SzBPjZF60=
-github.com/maciej/bme280 v0.2.0 h1:WsoHmIxw15AbhyoY5EWYH6loHNnsCayW1yWVLmukJVQ=
-github.com/maciej/bme280 v0.2.0/go.mod h1:uhS+osHzBXnIwpXTCklgoi0q4XiA5Mr5ehJfGIPlfQY=
-github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 h1:zYyBkD/k9seD2A7fsi6Oo2LfFZAehjjQMERAvZLEDnQ=
-github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646/go.mod h1:jpp1/29i3P1S/RLdc7JQKbRpFeM1dOBd8T9ki5s+AY8=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
@@ -16,8 +12,6 @@ github.com/warthog618/go-gpiocdev v0.9.1 h1:pwHPaqjJfhCipIQl78V+O3l9OKHivdRDdmgX
 github.com/warthog618/go-gpiocdev v0.9.1/go.mod h1:dN3e3t/S2aSNC+hgigGE/dBW8jE1ONk9bDSEYfoPyl8=
 github.com/warthog618/go-gpiosim v0.1.1 h1:MRAEv+T+itmw+3GeIGpQJBfanUVyg0l3JCTwHtwdre4=
 github.com/warthog618/go-gpiosim v0.1.1/go.mod h1:YXsnB+I9jdCMY4YAlMSRrlts25ltjmuIsrnoUrBLdqU=
-golang.org/x/image v0.23.0 h1:HseQ7c2OpPKTPVzNjG5fwJsOTCiiwS4QdsYi5XU6H68=
-golang.org/x/image v0.23.0/go.mod h1:wJJBTdLfCCf3tiHa1fNxpZmUI4mmoZvwMCPP0ddoNKY=
 golang.org/x/sys v0.29.0 h1:TPYlXGxvx1MGTn2GiZDhnjPA9wZzZeGKHHmKhHYvgaU=
 golang.org/x/sys v0.29.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
