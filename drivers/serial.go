@@ -3,12 +3,22 @@ package drivers
 import (
 	"fmt"
 	"io"
+	"time"
 )
 
 // SerialConfig describes how to open a serial port.
 type SerialConfig struct {
 	Port string
 	Baud int
+
+	// SettleDelay is the time to wait after configuring the serial port
+	// before returning. This allows the hardware to stabilize after changing
+	// terminal settings. Some serial devices require a brief pause after
+	// reconfiguration to avoid data corruption or initialization issues.
+	//
+	// If zero, a default of 10ms is used. To disable the delay entirely,
+	// set to a negative value (e.g., -1).
+	SettleDelay time.Duration
 }
 
 // SerialPort is an opened serial port.

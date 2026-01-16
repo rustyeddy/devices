@@ -34,7 +34,7 @@ func (LinuxSerialFactory) OpenSerial(cfg SerialConfig) (SerialPort, error) {
 		}
 	}()
 
-	if err := configureTermios(fd, cfg.Baud); err != nil {
+	if err := configureTermios(fd, cfg.Baud, cfg.SettleDelay); err != nil {
 		return nil, err
 	}
 
@@ -63,7 +63,7 @@ func (p *linuxSerialPort) Write(b []byte) (int, error) { return p.file.Write(b) 
 func (p *linuxSerialPort) Close() error                { return p.file.Close() }
 func (p *linuxSerialPort) String() string              { return fmt.Sprintf("%s@%d", p.port, p.baud) }
 
-func configureTermios(fd int, baud int) error {
+func configureTermios(fd int, baud int, settleDelay time.Duration) error {
 	t, err := unix.IoctlGetTermios(fd, unix.TCGETS)
 	if err != nil {
 		return fmt.Errorf("serial: ioctl TCGETS: %w", err)
@@ -95,8 +95,17 @@ func configureTermios(fd int, baud int) error {
 		return fmt.Errorf("serial: ioctl TCSETS: %w", err)
 	}
 
-	// Give the line a moment to settle.
-	time.Sleep(10 * time.Millisecond)
+	// Apply settle delay if configured. Default to 10ms if not set.
+	// Hardware may need time to stabilize after terminal reconfiguration.
+	delay := settleDelay
+	if delay == 0 {
+		delay = 10 * time.Millisecond
+	} else if delay < 0 {
+		delay = 0 // Negative value disables the delay
+	}
+	if delay > 0 {
+		time.Sleep(delay)
+	}
 	return nil
 }
 
