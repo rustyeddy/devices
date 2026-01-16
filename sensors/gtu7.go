@@ -305,10 +305,12 @@ func parseLatLon(lat, ns, lon, ew string) (float64, float64, error) {
 	return latVal, lonVal, nil
 }
 
-// nopCloser wraps an io.Reader with a no-op Close method.
+// nopCloser wraps an io.Reader with no-op Close and Write methods to satisfy io.ReadWriteCloser.
 type nopCloser struct {
 	io.Reader
 }
 
-func (nopCloser) Close() error                      { return nil }
-func (nopCloser) Write(p []byte) (n int, err error) { return 0, errors.New("write operation not supported on test reader wrapper") }
+func (nopCloser) Close() error { return nil }
+func (nopCloser) Write(p []byte) (n int, err error) {
+	return 0, errors.New("write operation not supported on test reader wrapper")
+}
