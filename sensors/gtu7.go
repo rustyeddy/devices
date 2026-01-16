@@ -44,7 +44,7 @@ type GTU7 struct {
 	r    io.Reader
 }
 
-func NewGTU7(cfg GTU7Config) *GTU7 {
+func NewGTU7(cfg GTU7Config) (*GTU7, error) {
 	if cfg.Factory == nil {
 		cfg.Factory = drivers.LinuxSerialFactory{}
 	}
@@ -55,7 +55,7 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 	} else {
 		port, err := cfg.Factory.OpenSerial(cfg.Serial)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		r = port
 	}
@@ -64,7 +64,7 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 		name: cfg.Name,
 		out:  make(chan GPSFix, 4),
 		r:    r,
-	}
+	}, nil
 }
 
 func (g *GTU7) Out() <-chan GPSFix { return g.out }
