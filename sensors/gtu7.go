@@ -51,7 +51,7 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 
 	var r io.ReadWriteCloser
 	if cfg.Reader != nil {
-		// Wrap test reader in a nopCloser if it doesn't implement Close
+		// Wrap test reader in a nopCloser if it doesn't implement ReadWriteCloser
 		if rc, ok := cfg.Reader.(io.ReadWriteCloser); ok {
 			r = rc
 		} else {
@@ -311,4 +311,4 @@ type nopCloser struct {
 }
 
 func (nopCloser) Close() error                      { return nil }
-func (nopCloser) Write(p []byte) (n int, err error) { return 0, errors.New("not supported") }
+func (nopCloser) Write(p []byte) (n int, err error) { return 0, errors.New("write operation not supported on test reader wrapper") }
