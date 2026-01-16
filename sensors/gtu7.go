@@ -39,31 +39,30 @@ type GTU7Config struct {
 }
 
 type GTU7 struct {
-	name string
-	out  chan GPSFix
-	r    io.Reader
+	cfg GTU7Config
+	out chan GPSFix
 }
 
+// NewGTU7 constructs a GTU7 GPS sensor with the given configuration.
+//
+// The GTU7 reads NMEA 0183 sentences (GPGGA, GPRMC, GPVTG) from a serial port
+// and emits GPSFix updates. Serial port initialization is deferred to Run(),
+// so this constructor cannot fail.
+//
+// Parameters:
+//   - cfg: Configuration including serial settings and optional test reader.
+//     If cfg.Factory is nil, defaults to LinuxSerialFactory.
+//     If cfg.Reader is non-nil (for tests), serial port is not used.
+//
+// Returns a GTU7 instance ready to Run().
 func NewGTU7(cfg GTU7Config) *GTU7 {
 	if cfg.Factory == nil {
 		cfg.Factory = drivers.LinuxSerialFactory{}
 	}
 
-	var r io.Reader
-	if cfg.Reader != nil {
-		r = cfg.Reader
-	} else {
-		port, err := cfg.Factory.OpenSerial(cfg.Serial)
-		if err != nil {
-			panic(err)
-		}
-		r = port
-	}
-
 	return &GTU7{
-		name: cfg.Name,
-		out:  make(chan GPSFix, 4),
-		r:    r,
+		cfg: cfg,
+		out: make(chan GPSFix, 4),
 	}
 }
 
@@ -71,7 +70,7 @@ func (g *GTU7) Out() <-chan GPSFix { return g.out }
 
 func (g *GTU7) Descriptor() devices.Descriptor {
 	return devices.Descriptor{
-		Name:      g.name,
+		Name:      g.cfg.Name,
 		Kind:      "gps",
 		ValueType: "GPSFix",
 	}
@@ -80,6 +79,23 @@ func (g *GTU7) Descriptor() devices.Descriptor {
 func (g *GTU7) Run(ctx context.Context) error {
 	defer close(g.out)
 
+	// Initialize reader: test injection or serial port
+	var r io.Reader
+	if g.cfg.Reader != nil {
+		r = g.cfg.Reader
+	} else {
+		port, err := g.cfg.Factory.OpenSerial(g.cfg.Serial)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if closer, ok := port.(io.Closer); ok {
+				_ = closer.Close()
+			}
+		}()
+		r = port
+	}
+
 	var last GPSFix
 	haveFix := false
 
@@ -87,7 +103,7 @@ func (g *GTU7) Run(ctx context.Context) error {
 	haveRMCSpeed := false
 	haveRMCCourse := false
 
-	sc := bufio.NewScanner(g.r)
+	sc := bufio.NewScanner(r)
 	for sc.Scan() {
 		select {
 		case <-ctx.Done():
