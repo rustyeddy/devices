@@ -39,9 +39,9 @@ type GTU7Config struct {
 }
 
 type GTU7 struct {
-	name string
-	out  chan GPSFix
-	r    io.Reader
+	devices.Base
+	out chan GPSFix
+	r   io.Reader
 }
 
 func NewGTU7(cfg GTU7Config) *GTU7 {
@@ -61,7 +61,7 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 	}
 
 	return &GTU7{
-		name: cfg.Name,
+		Base: devices.NewBase(cfg.Name, 16),
 		out:  make(chan GPSFix, 4),
 		r:    r,
 	}
@@ -71,14 +71,19 @@ func (g *GTU7) Out() <-chan GPSFix { return g.out }
 
 func (g *GTU7) Descriptor() devices.Descriptor {
 	return devices.Descriptor{
-		Name:      g.name,
+		Name:      g.Name(),
 		Kind:      "gps",
 		ValueType: "GPSFix",
 	}
 }
 
 func (g *GTU7) Run(ctx context.Context) error {
-	defer close(g.out)
+	g.Emit(devices.EventOpen, "run", nil, nil)
+	defer func() {
+		close(g.out)
+		g.Emit(devices.EventClose, "stop", nil, nil)
+		g.CloseEvents()
+	}()
 
 	var last GPSFix
 	haveFix := false
@@ -156,7 +161,11 @@ func (g *GTU7) Run(ctx context.Context) error {
 		}
 	}
 
-	return sc.Err()
+	if err := sc.Err(); err != nil {
+		g.Emit(devices.EventError, "scan error", err, nil)
+		return err
+	}
+	return nil
 }
 
 func (g *GTU7) emit(f GPSFix) {
