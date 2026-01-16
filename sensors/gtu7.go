@@ -40,6 +40,7 @@ type GTU7Config struct {
 
 type GTU7 struct {
 	name string
+	cfg  GTU7Config
 	out  chan GPSFix
 	r    io.Reader
 }
@@ -62,6 +63,7 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 
 	return &GTU7{
 		name: cfg.Name,
+		cfg:  cfg,
 		out:  make(chan GPSFix, 4),
 		r:    r,
 	}
@@ -70,10 +72,21 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 func (g *GTU7) Out() <-chan GPSFix { return g.out }
 
 func (g *GTU7) Descriptor() devices.Descriptor {
+	attrs := make(map[string]string)
+	if g.cfg.Serial.Port != "" {
+		attrs["port"] = g.cfg.Serial.Port
+	}
+	if g.cfg.Serial.Baud > 0 {
+		attrs["baud"] = strconv.Itoa(g.cfg.Serial.Baud)
+	}
+
 	return devices.Descriptor{
-		Name:      g.name,
-		Kind:      "gps",
-		ValueType: "GPSFix",
+		Name:       g.name,
+		Kind:       "gps",
+		ValueType:  "GPSFix",
+		Access:     devices.ReadOnly,
+		Tags:       []string{"gps", "navigation", "location"},
+		Attributes: attrs,
 	}
 }
 

@@ -6,8 +6,50 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rustyeddy/devices"
+	"github.com/rustyeddy/devices/drivers"
 	"github.com/stretchr/testify/require"
 )
+
+func TestGTU7_Descriptor(t *testing.T) {
+	t.Run("with serial config", func(t *testing.T) {
+		gps := NewGTU7(GTU7Config{
+			Name: "test-gps",
+			Serial: drivers.SerialConfig{
+				Port: "/dev/ttyUSB0",
+				Baud: 9600,
+			},
+			Reader: strings.NewReader(""),
+		})
+
+		desc := gps.Descriptor()
+		require.Equal(t, "test-gps", desc.Name)
+		require.Equal(t, "gps", desc.Kind)
+		require.Equal(t, "GPSFix", desc.ValueType)
+		require.Equal(t, devices.ReadOnly, desc.Access)
+		require.Contains(t, desc.Tags, "gps")
+		require.Contains(t, desc.Tags, "navigation")
+		require.Contains(t, desc.Tags, "location")
+		require.Equal(t, "/dev/ttyUSB0", desc.Attributes["port"])
+		require.Equal(t, "9600", desc.Attributes["baud"])
+	})
+
+	t.Run("without serial config", func(t *testing.T) {
+		gps := NewGTU7(GTU7Config{
+			Name:   "test-gps-2",
+			Reader: strings.NewReader(""),
+		})
+
+		desc := gps.Descriptor()
+		require.Equal(t, "test-gps-2", desc.Name)
+		require.Equal(t, "gps", desc.Kind)
+		require.Contains(t, desc.Tags, "gps")
+		require.Contains(t, desc.Tags, "navigation")
+		require.Contains(t, desc.Tags, "location")
+		// Attributes should be empty when no serial config
+		require.Empty(t, desc.Attributes)
+	})
+}
 
 func TestGTU7_PrefersRMCOverVTG(t *testing.T) {
 	input := `
