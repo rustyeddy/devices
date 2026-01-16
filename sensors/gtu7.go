@@ -84,7 +84,7 @@ func (g *GTU7) Descriptor() devices.Descriptor {
 }
 
 func (g *GTU7) Run(ctx context.Context) error {
-	g.Emit(devices.EventOpen, "run", nil, nil)
+	g.Emit(devices.EventOpen, "start", nil, nil)
 	defer func() {
 		close(g.out)
 		g.Emit(devices.EventClose, "stop", nil, nil)
