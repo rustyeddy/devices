@@ -55,3 +55,36 @@ $GPRMC,160446.00,A,3340.34121,N,11800.11332,W,7.25,123.40,160126,,,A*00
 		require.FailNow(t, "run did not exit")
 	}
 }
+
+func TestGTU7_BufferSize(t *testing.T) {
+	t.Run("default buffer size is 16", func(t *testing.T) {
+		gps := NewGTU7(GTU7Config{
+			Reader: strings.NewReader(""),
+		})
+		require.Equal(t, 16, cap(gps.out))
+	})
+
+	t.Run("custom buffer size", func(t *testing.T) {
+		gps := NewGTU7(GTU7Config{
+			Reader: strings.NewReader(""),
+			Buf:    32,
+		})
+		require.Equal(t, 32, cap(gps.out))
+	})
+
+	t.Run("zero buffer size defaults to 16", func(t *testing.T) {
+		gps := NewGTU7(GTU7Config{
+			Reader: strings.NewReader(""),
+			Buf:    0,
+		})
+		require.Equal(t, 16, cap(gps.out))
+	})
+
+	t.Run("negative buffer size defaults to 16", func(t *testing.T) {
+		gps := NewGTU7(GTU7Config{
+			Reader: strings.NewReader(""),
+			Buf:    -5,
+		})
+		require.Equal(t, 16, cap(gps.out))
+	})
+}
