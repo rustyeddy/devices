@@ -88,11 +88,7 @@ func (g *GTU7) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		defer func() {
-			if closer, ok := port.(io.Closer); ok {
-				_ = closer.Close()
-			}
-		}()
+		defer func() { _ = port.Close() }()
 		r = port
 	}
 
