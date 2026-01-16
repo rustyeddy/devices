@@ -38,6 +38,25 @@ type GTU7Config struct {
 	Reader io.Reader
 }
 
+// GTU7 is a driver for the GTU7 GPS module that parses NMEA sentences
+// (GGA, RMC, VTG) from a serial connection and emits GPSFix values.
+//
+// Basic usage:
+//
+//	cfg := GTU7Config{
+//		Name: "gps",
+//		Serial: drivers.SerialConfig{Port: "/dev/ttyUSB0", Baud: 9600},
+//	}
+//	gps := NewGTU7(cfg)
+//	go gps.Run(ctx)
+//	for fix := range gps.Out() {
+//		// Process GPS fix
+//	}
+//
+// Important behavioral notes:
+//   - RMC sentences take precedence over VTG for speed and course data
+//   - The Out channel is buffered (size 4) and uses non-blocking sends
+//   - Run will close the Out channel when the context is canceled or an error occurs
 type GTU7 struct {
 	name string
 	out  chan GPSFix
