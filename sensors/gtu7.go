@@ -29,6 +29,9 @@ type GPSFix struct {
 	Date   string // DDMMYY
 }
 
+// knotsToMPS is the conversion factor from knots to meters per second
+const knotsToMPS = 0.514444
+
 type GTU7Config struct {
 	Name    string
 	Serial  drivers.SerialConfig
@@ -222,7 +225,7 @@ func parseGPRMC(line string) (GPSFix, bool) {
 	if parts[7] != "" {
 		if v, err := strconv.ParseFloat(parts[7], 64); err == nil {
 			fix.SpeedKnots = v
-			fix.SpeedMPS = v * 0.514444
+			fix.SpeedMPS = v * knotsToMPS
 		}
 	}
 
@@ -257,7 +260,7 @@ func parseGPVTG(line string) (GPSFix, bool) {
 	if parts[5] != "" {
 		if v, err := strconv.ParseFloat(parts[5], 64); err == nil {
 			fix.SpeedKnots = v
-			fix.SpeedMPS = v * 0.514444
+			fix.SpeedMPS = v * knotsToMPS
 		}
 	}
 
