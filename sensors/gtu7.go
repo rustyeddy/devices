@@ -55,7 +55,7 @@ type GTU7Config struct {
 //
 // Important behavioral notes:
 //   - RMC sentences take precedence over VTG for speed and course data
-//   - The Out channel is buffered (size 4) and uses non-blocking sends
+//   - The Out channel is buffered (size 4); messages are dropped if the buffer is full
 //   - Run will close the Out channel when the context is canceled or an error occurs
 type GTU7 struct {
 	name string
