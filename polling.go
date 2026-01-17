@@ -117,7 +117,11 @@ func RunPoller[T any](ctx context.Context, base *Base, out chan T, cfg PollConfi
 			default:
 			}
 		} else {
-			out <- v
+			select {
+			case out <- v:
+			case <-ctx.Done():
+				return
+			}
 		}
 
 		meta := map[string]string(nil)
