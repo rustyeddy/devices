@@ -35,6 +35,9 @@ type GTU7Config struct {
 	Serial  drivers.SerialConfig
 	Factory drivers.SerialFactory
 
+	// Buf sizes the out channel. Default 16.
+	Buf int
+
 	// Test injection
 	Reader io.Reader
 }
@@ -42,7 +45,7 @@ type GTU7Config struct {
 type GTU7 struct {
 	name string
 	out  chan GPSFix
-	r    io.Reader
+	r    io.ReadCloser
 }
 
 func NewGTU7(cfg GTU7Config) *GTU7 {
@@ -50,9 +53,18 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 		cfg.Factory = drivers.LinuxSerialFactory{}
 	}
 
-	var r io.Reader
+	if cfg.Buf <= 0 {
+		cfg.Buf = 16
+	}
+
+	var r io.ReadCloser
 	if cfg.Reader != nil {
-		r = cfg.Reader
+		// Wrap test reader with io.NopCloser if it doesn't implement io.Closer
+		if rc, ok := cfg.Reader.(io.ReadCloser); ok {
+			r = rc
+		} else {
+			r = io.NopCloser(cfg.Reader)
+		}
 	} else {
 		port, err := cfg.Factory.OpenSerial(cfg.Serial)
 		if err != nil {
@@ -63,7 +75,7 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 
 	return &GTU7{
 		name: cfg.Name,
-		out:  make(chan GPSFix, 4),
+		out:  make(chan GPSFix, cfg.Buf),
 		r:    r,
 	}
 }
@@ -75,11 +87,15 @@ func (g *GTU7) Descriptor() devices.Descriptor {
 		Name:      g.name,
 		Kind:      "gps",
 		ValueType: "GPSFix",
+		Access:    devices.ReadOnly,
 	}
 }
 
 func (g *GTU7) Run(ctx context.Context) error {
 	defer close(g.out)
+	defer func() {
+		_ = g.r.Close()
+	}()
 
 	var last GPSFix
 	haveFix := false
@@ -124,10 +140,14 @@ func (g *GTU7) Run(ctx context.Context) error {
 				last.SpeedKnots = fix.SpeedKnots
 				last.SpeedMPS = fix.SpeedMPS
 				haveRMCSpeed = true
+			} else {
+				haveRMCSpeed = false
 			}
 			if !math.IsNaN(fix.CourseDeg) {
 				last.CourseDeg = fix.CourseDeg
 				haveRMCCourse = true
+			} else {
+				haveRMCCourse = false
 			}
 			if fix.Status != "" {
 				last.Status = fix.Status
