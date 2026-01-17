@@ -4,13 +4,12 @@ import (
 	"context"
 
 	"github.com/rustyeddy/devices/display"
-	"github.com/rustyeddy/devices/drivers"
 )
 
 func main() {
 	oled := display.NewOLED(display.OLEDConfig{
 		Name:    "status",
-		Factory: drivers.MockOLEDFactory{}, // <- portable (x86/CI)
+		Factory: defaultFactory(),
 		Bus:     "1",
 		Addr:    0x3c,
 		Width:   128,
