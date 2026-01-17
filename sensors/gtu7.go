@@ -44,7 +44,7 @@ type GTU7Config struct {
 type GTU7 struct {
 	name string
 	out  chan GPSFix
-	r    io.Reader
+	r    io.ReadCloser
 }
 
 func NewGTU7(cfg GTU7Config) *GTU7 {
@@ -56,9 +56,14 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 		cfg.Buf = 16
 	}
 
-	var r io.Reader
+	var r io.ReadCloser
 	if cfg.Reader != nil {
-		r = cfg.Reader
+		// Wrap test reader with io.NopCloser if it doesn't implement io.Closer
+		if rc, ok := cfg.Reader.(io.ReadCloser); ok {
+			r = rc
+		} else {
+			r = io.NopCloser(cfg.Reader)
+		}
 	} else {
 		port, err := cfg.Factory.OpenSerial(cfg.Serial)
 		if err != nil {
@@ -86,6 +91,9 @@ func (g *GTU7) Descriptor() devices.Descriptor {
 
 func (g *GTU7) Run(ctx context.Context) error {
 	defer close(g.out)
+	defer func() {
+		_ = g.r.Close()
+	}()
 
 	var last GPSFix
 	haveFix := false
