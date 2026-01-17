@@ -138,10 +138,14 @@ func (g *GTU7) Run(ctx context.Context) error {
 				last.SpeedKnots = fix.SpeedKnots
 				last.SpeedMPS = fix.SpeedMPS
 				haveRMCSpeed = true
+			} else {
+				haveRMCSpeed = false
 			}
 			if !math.IsNaN(fix.CourseDeg) {
 				last.CourseDeg = fix.CourseDeg
 				haveRMCCourse = true
+			} else {
+				haveRMCCourse = false
 			}
 			if fix.Status != "" {
 				last.Status = fix.Status
