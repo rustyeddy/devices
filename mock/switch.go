@@ -51,7 +51,7 @@ func (s *Switch) Run(ctx context.Context) error {
 	defer func() {
 		close(s.out)
 		s.Emit(devices.EventClose, "stop", nil, nil)
-		s.CloseEvents()
+		s.Close()
 	}()
 
 	for {

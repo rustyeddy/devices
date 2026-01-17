@@ -87,7 +87,7 @@ func (r *Relay) Run(ctx context.Context) error {
 		_ = r.line.Close()
 		close(r.out)
 		r.Emit(devices.EventClose, "stop", nil, nil)
-		r.CloseEvents()
+		r.Close()
 	}()
 
 	for {

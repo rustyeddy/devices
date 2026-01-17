@@ -100,14 +100,14 @@ func (v *VH400) Run(ctx context.Context) error {
 		err := errors.New("vh400: interval must be > 0")
 		v.Emit(devices.EventError, "invalid interval", err, nil)
 		close(v.out)
-		v.CloseEvents()
+		v.Close()
 		return err
 	}
 	if v.cfg.Channel < 0 || v.cfg.Channel > 3 {
 		err := fmt.Errorf("vh400: invalid channel %d", v.cfg.Channel)
 		v.Emit(devices.EventError, "invalid channel", err, nil)
 		close(v.out)
-		v.CloseEvents()
+		v.Close()
 		return err
 	}
 
@@ -117,14 +117,14 @@ func (v *VH400) Run(ctx context.Context) error {
 			err := errors.New("vh400: adc and factory are both nil")
 			v.Emit(devices.EventError, "factory missing", err, nil)
 			close(v.out)
-			v.CloseEvents()
+			v.Close()
 			return err
 		}
 		opened, err := v.cfg.Factory.OpenADS1115(v.cfg.Bus, v.cfg.Addr)
 		if err != nil {
 			v.Emit(devices.EventError, "open adc failed", err, nil)
 			close(v.out)
-			v.CloseEvents()
+			v.Close()
 			return err
 		}
 		adc = opened

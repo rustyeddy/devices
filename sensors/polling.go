@@ -65,7 +65,7 @@ var (
 // - emits EventInfo on sample, EventError on read errors
 // - on exit: stops ticker, closes Out, emits EventClose, closes Base events
 //
-// IMPORTANT: This helper owns closing Out and closing events (Base.CloseEvents()).
+// IMPORTANT: This helper owns closing Out and closing events (Base.Close()).
 // If the caller has additional resources to close, defer them BEFORE calling RunPoller.
 func RunPoller[T any](ctx context.Context, base *devices.Base, out chan T, cfg PollConfig[T]) error {
 	if base == nil {
@@ -125,7 +125,7 @@ func RunPoller[T any](ctx context.Context, base *devices.Base, out chan T, cfg P
 	defer func() {
 		close(out)
 		base.Emit(devices.EventClose, "stop", nil, nil)
-		base.CloseEvents()
+		base.Close()
 	}()
 
 	// initial sample
