@@ -2,6 +2,7 @@ package devices
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -108,4 +109,61 @@ func TestRunPoller_BlockWhenNotDropOnFull(t *testing.T) {
 
 	cancel()
 	require.NoError(t, <-errCh)
+}
+
+func TestRunPoller_ContextCancelDuringBlockingSend(t *testing.T) {
+	t.Parallel()
+
+	base := NewBase("sensor", 16)
+	out := make(chan int, 1)
+
+	ft := &FakeTicker{Q: make(chan time.Time, 10)}
+	readComplete := make(chan struct{})
+	var readOnce sync.Once
+	cfg := PollConfig[int]{
+		Interval:    1 * time.Second,
+		EmitInitial: false,
+		DropOnFull:  false, // block when channel is full
+		NewTicker:   func(time.Duration) Ticker { return ft },
+		Read: func(ctx context.Context) (int, error) {
+			readOnce.Do(func() { close(readComplete) })
+			return 42, nil
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- RunPoller[int](ctx, &base, out, cfg)
+	}()
+
+	// fill the output channel so the next publish will block
+	out <- 999
+
+	// trigger a tick to cause a read and subsequent blocked send
+	ft.Q <- time.Now()
+	<-readComplete // wait for Read to complete
+
+	// give a moment for the publish goroutine to reach the blocked send state
+	// this is necessary because we can't directly observe when the goroutine blocks
+	time.Sleep(10 * time.Millisecond)
+
+	// cancel context while the send is blocked
+	cancel()
+
+	// verify the poller exits without hanging (within reasonable timeout)
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("poller did not exit after context cancellation - likely hanging")
+	}
+
+	// verify channel still has the original fill value (blocked send was abandoned)
+	select {
+	case v := <-out:
+		require.Equal(t, 999, v)
+	default:
+		t.Fatal("expected channel to have the fill value")
+	}
 }
