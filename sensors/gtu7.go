@@ -44,7 +44,7 @@ type GTU7Config struct {
 type GTU7 struct {
 	name string
 	out  chan GPSFix
-	r    io.ReadWriteCloser
+	r    io.ReadCloser
 }
 
 func NewGTU7(cfg GTU7Config) *GTU7 {
@@ -52,13 +52,17 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 		cfg.Factory = drivers.LinuxSerialFactory{}
 	}
 
-	var r io.ReadWriteCloser
+	if cfg.Buf <= 0 {
+		cfg.Buf = 16
+	}
+
+	var r io.ReadCloser
 	if cfg.Reader != nil {
-		// Wrap test reader in a nopCloser if it doesn't implement ReadWriteCloser
-		if rc, ok := cfg.Reader.(io.ReadWriteCloser); ok {
+		// Wrap test reader with io.NopCloser if it doesn't implement io.Closer
+		if rc, ok := cfg.Reader.(io.ReadCloser); ok {
 			r = rc
 		} else {
-			r = nopCloser{cfg.Reader}
+			r = io.NopCloser(cfg.Reader)
 		}
 	} else {
 		port, err := cfg.Factory.OpenSerial(cfg.Serial)
@@ -306,14 +310,4 @@ func parseLatLon(lat, ns, lon, ew string) (float64, float64, error) {
 		lonVal = -lonVal
 	}
 	return latVal, lonVal, nil
-}
-
-// nopCloser wraps an io.Reader with no-op Close and Write methods to satisfy io.ReadWriteCloser.
-type nopCloser struct {
-	io.Reader
-}
-
-func (nopCloser) Close() error { return nil }
-func (nopCloser) Write(p []byte) (n int, err error) {
-	return 0, errors.New("write operation not supported on test reader wrapper")
 }
