@@ -126,6 +126,25 @@ func TestParseLatLon(t *testing.T) {
 			lon:     "also-invalid",
 			ew:      "W",
 			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lat, lon, err := parseLatLon(tt.lat, tt.ns, tt.lon, tt.ew)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			const epsilon = 1e-6
+			require.InDelta(t, tt.wantLat, lat, epsilon)
+			require.InDelta(t, tt.wantLon, lon, epsilon)
+		})
+	}
+}
 func TestGTU7_FallbackToVTGWhenRMCStopsProvidingData(t *testing.T) {
 	// Scenario: RMC initially provides speed/course, then stops (empty fields).
 	// VTG should be used for speed/course after RMC stops providing it.
