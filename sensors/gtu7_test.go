@@ -227,7 +227,7 @@ func TestGTU7_MultiConstellationVariants(t *testing.T) {
 			wantLon: 11.5167,
 		},
 		{
-			name:    "GNVTG - multi-constellation",
+			name:    "GNVTG with GPGGA - multi-constellation",
 			input:   "$GNVTG,54.7,T,,M,5.5,N,10.2,K,A*2F\n$GPGGA,123519.00,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47\n",
 			wantLat: 48.1173,
 			wantLon: 11.5167,
