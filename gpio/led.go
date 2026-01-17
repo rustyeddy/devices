@@ -90,7 +90,7 @@ func (l *LED) Run(ctx context.Context) error {
 		_ = l.line.Close()
 		close(l.out)
 		l.Emit(devices.EventClose, "stop", nil, nil)
-		l.CloseEvents()
+		l.Close()
 	}()
 
 	for {

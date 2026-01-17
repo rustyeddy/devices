@@ -148,20 +148,20 @@ func (o *OLED) Run(ctx context.Context) error {
 	if o.cfg.Factory == nil {
 		err := errors.New("oled: factory is nil")
 		o.Emit(devices.EventError, "factory missing", err, nil)
-		o.CloseEvents()
+		o.Close()
 		return err
 	}
 	if o.Width <= 0 || o.Height <= 0 {
 		err := fmt.Errorf("oled: invalid dimensions %dx%d", o.Width, o.Height)
 		o.Emit(devices.EventError, "invalid dimensions", err, nil)
-		o.CloseEvents()
+		o.Close()
 		return err
 	}
 
 	drv, err := o.cfg.Factory.OpenSSD1306(o.cfg.Bus, o.cfg.Addr, o.Width, o.Height)
 	if err != nil {
 		o.Emit(devices.EventError, "open failed", err, nil)
-		o.CloseEvents()
+		o.Close()
 		return err
 	}
 	o.drv = drv
@@ -169,7 +169,7 @@ func (o *OLED) Run(ctx context.Context) error {
 	defer func() {
 		_ = o.drv.Close()
 		o.Emit(devices.EventClose, "stop", nil, nil)
-		o.CloseEvents()
+		o.Close()
 	}()
 
 	for {

@@ -88,7 +88,7 @@ func (b *Button) Run(ctx context.Context) error {
 		_ = b.line.Close()
 		close(b.out)
 		b.Emit(devices.EventClose, "stop", nil, nil)
-		b.CloseEvents()
+		b.Close()
 	}()
 
 	// Emit initial state so MQTT state is meaningful immediately.  Todo, what if
