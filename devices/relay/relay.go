@@ -6,7 +6,6 @@ import (
 
 	"github.com/rustyeddy/devices"
 	"github.com/rustyeddy/devices/drivers"
-	"github.com/rustyeddy/devices/sensors"
 )
 
 // RelayConfig configures a GPIO relay.
@@ -56,7 +55,7 @@ func (r *Relay) Descriptor() devices.Descriptor {
 		Tags:      []string{"gpio", "output"},
 		Attributes: map[string]string{
 			"chip":   r.cfg.Chip,
-			"offset": sensors.Itoa(r.cfg.Offset),
+			"offset": devices.Itoa(r.cfg.Offset),
 		},
 	}
 }

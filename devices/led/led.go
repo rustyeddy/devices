@@ -6,7 +6,6 @@ import (
 
 	"github.com/rustyeddy/devices"
 	"github.com/rustyeddy/devices/drivers"
-	"github.com/rustyeddy/devices/sensors"
 )
 
 // LEDConfig configures a GPIO LED (output line).
@@ -60,7 +59,7 @@ func (l *LED) Descriptor() devices.Descriptor {
 		Tags:      []string{"gpio", "output", "led"},
 		Attributes: map[string]string{
 			"chip":   l.cfg.Chip,
-			"offset": sensors.Itoa(l.cfg.Offset),
+			"offset": devices.Itoa(l.cfg.Offset),
 		},
 	}
 }
