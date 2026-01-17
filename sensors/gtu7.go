@@ -92,9 +92,7 @@ func (g *GTU7) Descriptor() devices.Descriptor {
 func (g *GTU7) Run(ctx context.Context) error {
 	defer close(g.out)
 	defer func() {
-		if g.r != nil {
-			_ = g.r.Close()
-		}
+		_ = g.r.Close()
 	}()
 
 	var last GPSFix
