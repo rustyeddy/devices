@@ -24,6 +24,9 @@ type Device interface {
 	// Implementations should respect ctx cancellation and return promptly.
 	Run(ctx context.Context) error
 
+	// Close the device
+	Close() error
+
 	// Events emits lifecycle, error, and edge notifications.
 	// Returns a non-nil receive-only channel.
 	Events() <-chan Event

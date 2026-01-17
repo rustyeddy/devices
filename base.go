@@ -126,9 +126,10 @@ func (b *Base) EmitWithContext(ctx context.Context, kind EventKind, msg string, 
 // As the channel owner, Base is responsible for closing the channel exactly once.
 // After Close is called, all Emit methods will return immediately without sending.
 // Close is safe to call multiple times.
-func (b *Base) Close() {
+func (b *Base) Close() error {
 	b.once.Do(func() {
 		b.cancel() // Signal shutdown
 		close(b.events)
 	})
+	return nil
 }

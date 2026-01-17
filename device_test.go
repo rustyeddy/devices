@@ -21,6 +21,7 @@ func (d *testDevice) Run(context.Context) error { return nil }
 func (d *testDevice) Events() <-chan Event      { return d.events }
 func (d *testDevice) Out() <-chan bool          { return d.out }
 func (d *testDevice) In() chan<- bool           { return d.in }
+func (d *testDevice) Close() error              { return nil }
 
 func TestDeviceInterfaces(t *testing.T) {
 	t.Parallel()
