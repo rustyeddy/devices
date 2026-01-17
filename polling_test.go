@@ -155,7 +155,7 @@ func TestRunPoller_ContextCancelDuringBlockingSend(t *testing.T) {
 	select {
 	case err := <-errCh:
 		require.NoError(t, err)
-	case <-time.After(1 * time.Second):
+	case <-time.After(100 * time.Millisecond):
 		t.Fatal("poller did not exit after context cancellation - likely hanging")
 	}
 
