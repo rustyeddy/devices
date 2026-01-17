@@ -187,15 +187,17 @@ func TestParseLatLon(t *testing.T) {
 		})
 	}
 }
-func TestGTU7_FallbackToVTGWhenRMCStopsProvidingData(t *testing.T) {
-	// Scenario: RMC initially provides speed/course, then stops (empty fields).
-	// VTG should be used for speed/course after RMC stops providing it.
-	input := `
-$GPGGA,160446.00,3340.34121,N,11800.11332,W,2,08,1.20,11.8,M,-33.1,M,,0000*58
-$GPRMC,160446.00,A,3340.34121,N,11800.11332,W,7.25,123.40,160126,,,A*00
-$GPGGA,160447.00,3340.34121,N,11800.11332,W,2,08,1.20,11.8,M,-33.1,M,,0000*58
-$GPRMC,160447.00,A,3340.34121,N,11800.11332,W,,,160126,,,A*00
-$GPVTG,54.70,T,,M,5.50,N,10.19,K,A*00
+
+// func TestGTU7_FallbackToVTGWhenRMCStopsProvidingData(t *testing.T) {
+// 	// Scenario: RMC initially provides speed/course, then stops (empty fields).
+// 	// VTG should be used for speed/course after RMC stops providing it.
+// 	input := `
+// $GPGGA,160446.00,3340.34121,N,11800.11332,W,2,08,1.20,11.8,M,-33.1,M,,0000*58
+// $GPRMC,160446.00,A,3340.34121,N,11800.11332,W,7.25,123.40,160126,,,A*00
+// $GPGGA,160447.00,3340.34121,N,11800.11332,W,2,08,1.20,11.8,M,-33.1,M,,0000*58
+// $GPRMC,160447.00,A,3340.34121,N,11800.11332,W,,,160126,,,A*00
+// $GPVTG,54.70,T,,M,5.50,N,10.19,K,A*00`
+
 func TestGTU7_MalformedSentences(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -204,7 +206,6 @@ func TestGTU7_MalformedSentences(t *testing.T) {
 		{
 			name: "empty lines",
 			input: `
-
 
 $GPGGA,160446.00,3340.34121,N,11800.11332,W,2,08,1.20,11.8,M,-33.1,M,,0000*58
 `,
@@ -381,14 +382,15 @@ $GPGGA,160447.00,3340.34122,N,11800.11333,W,2,08,1.20,11.8,M,-33.1,M,,0000*58
 		require.FailNow(t, "run did not exit")
 	}
 }
-		require.FailNow(t, "run did not exit after cancellation")
-	}
 
-	// Drain any remaining messages and verify channel closes
-	for range gps.Out() {
-		// drain
-	}
-}
+// 		require.FailNow(t, "run did not exit after cancellation")
+// 	}
+
+// 	// Drain any remaining messages and verify channel closes
+// 	for range gps.Out() {
+// 		// drain
+// 	}
+// }
 
 func TestGTU7_MultiConstellationVariants(t *testing.T) {
 	tests := []struct {
@@ -470,6 +472,8 @@ func TestGTU7_MultiConstellationVariants(t *testing.T) {
 			}
 		})
 	}
+}
+
 func TestGTU7_BufferSize(t *testing.T) {
 	t.Run("default buffer size is 16", func(t *testing.T) {
 		gps := NewGTU7(GTU7Config{
