@@ -98,6 +98,95 @@ $GPRMC,160446.00,A,3340.34121,N,11800.11332,W,7.25,123.40,160126,,,A*00
 	}
 }
 
+func TestParseLatLon(t *testing.T) {
+	tests := []struct {
+		name    string
+		lat     string
+		ns      string
+		lon     string
+		ew      string
+		wantLat float64
+		wantLon float64
+		wantErr bool
+	}{
+		{
+			name:    "valid coordinates - northern hemisphere, western hemisphere",
+			lat:     "3340.34121",
+			ns:      "N",
+			lon:     "11800.11332",
+			ew:      "W",
+			wantLat: 33.6723535,
+			wantLon: -118.0018886666667,
+			wantErr: false,
+		},
+		{
+			name:    "valid coordinates - southern hemisphere, eastern hemisphere",
+			lat:     "3340.34121",
+			ns:      "S",
+			lon:     "11800.11332",
+			ew:      "E",
+			wantLat: -33.6723535,
+			wantLon: 118.0018886666667,
+			wantErr: false,
+		},
+		{
+			name:    "empty latitude",
+			lat:     "",
+			ns:      "N",
+			lon:     "11800.11332",
+			ew:      "W",
+			wantErr: true,
+		},
+		{
+			name:    "empty longitude",
+			lat:     "3340.34121",
+			ns:      "N",
+			lon:     "",
+			ew:      "W",
+			wantErr: true,
+		},
+		{
+			name:    "invalid latitude - not a number",
+			lat:     "invalid",
+			ns:      "N",
+			lon:     "11800.11332",
+			ew:      "W",
+			wantErr: true,
+		},
+		{
+			name:    "invalid longitude - not a number",
+			lat:     "3340.34121",
+			ns:      "N",
+			lon:     "invalid",
+			ew:      "W",
+			wantErr: true,
+		},
+		{
+			name:    "both coordinates invalid",
+			lat:     "not-a-number",
+			ns:      "N",
+			lon:     "also-invalid",
+			ew:      "W",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lat, lon, err := parseLatLon(tt.lat, tt.ns, tt.lon, tt.ew)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			const epsilon = 1e-6
+			require.InDelta(t, tt.wantLat, lat, epsilon)
+			require.InDelta(t, tt.wantLon, lon, epsilon)
+		})
+	}
+}
 func TestGTU7_FallbackToVTGWhenRMCStopsProvidingData(t *testing.T) {
 	// Scenario: RMC initially provides speed/course, then stops (empty fields).
 	// VTG should be used for speed/course after RMC stops providing it.

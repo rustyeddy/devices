@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"strconv"
@@ -325,10 +326,16 @@ func stripChecksum(s string) string {
 
 func parseLatLon(lat, ns, lon, ew string) (float64, float64, error) {
 	if lat == "" || lon == "" {
-		return 0, 0, errors.New("empty")
+		return 0, 0, errors.New("latitude or longitude is empty")
 	}
-	la, _ := strconv.ParseFloat(lat, 64)
-	lo, _ := strconv.ParseFloat(lon, 64)
+	la, err := strconv.ParseFloat(lat, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse latitude: %w", err)
+	}
+	lo, err := strconv.ParseFloat(lon, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse longitude: %w", err)
+	}
 
 	latDeg := math.Floor(la / 100)
 	latMin := la - latDeg*100
