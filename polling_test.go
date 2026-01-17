@@ -2,6 +2,7 @@ package devices
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -117,14 +118,15 @@ func TestRunPoller_ContextCancelDuringBlockingSend(t *testing.T) {
 	out := make(chan int, 1)
 
 	ft := &FakeTicker{Q: make(chan time.Time, 10)}
-	readStarted := make(chan struct{})
+	readComplete := make(chan struct{})
+	var readOnce sync.Once
 	cfg := PollConfig[int]{
 		Interval:    1 * time.Second,
 		EmitInitial: false,
 		DropOnFull:  false, // block when channel is full
 		NewTicker:   func(time.Duration) Ticker { return ft },
 		Read: func(ctx context.Context) (int, error) {
-			close(readStarted)
+			readOnce.Do(func() { close(readComplete) })
 			return 42, nil
 		},
 	}
@@ -140,9 +142,10 @@ func TestRunPoller_ContextCancelDuringBlockingSend(t *testing.T) {
 
 	// trigger a tick to cause a read and subsequent blocked send
 	ft.Q <- time.Now()
-	<-readStarted // wait for Read to complete
+	<-readComplete // wait for Read to complete
 
-	// give a moment for the publish to be blocked on the channel send
+	// give a moment for the publish goroutine to reach the blocked send state
+	// this is necessary because we can't directly observe when the goroutine blocks
 	time.Sleep(10 * time.Millisecond)
 
 	// cancel context while the send is blocked
