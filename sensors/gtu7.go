@@ -13,6 +13,27 @@ import (
 	"github.com/rustyeddy/devices/drivers"
 )
 
+// GPSFix represents a GPS position fix aggregated from NMEA sentences
+// (typically GPGGA, GPRMC, and GPVTG). Fields are populated as data becomes
+// available from the sensor.
+//
+// Position coordinates:
+//   - Lat, Lon: decimal degrees (negative for South/West)
+//   - AltMeters: altitude in meters above mean sea level
+//
+// Quality indicators:
+//   - Quality: GPS fix quality (0=invalid, 1=GPS fix, 2=DGPS fix, etc.)
+//   - HDOP: horizontal dilution of precision
+//   - Satellites: number of satellites in view
+//
+// Motion data:
+//   - SpeedKnots: ground speed in knots
+//   - SpeedMPS: ground speed in meters per second
+//   - CourseDeg: course over ground in degrees (0-360, true north)
+//
+// Status fields:
+//   - Status: RMC status ("A" = Active/valid, "V" = Void/invalid)
+//   - Date: UTC date in DDMMYY format
 type GPSFix struct {
 	Lat        float64
 	Lon        float64
@@ -25,8 +46,8 @@ type GPSFix struct {
 	SpeedMPS   float64
 	CourseDeg  float64
 
-	Status string // RMC: A/V
-	Date   string // DDMMYY
+	Status string
+	Date   string
 }
 
 type GTU7Config struct {
