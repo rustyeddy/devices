@@ -86,6 +86,7 @@ func (g *GTU7) Descriptor() devices.Descriptor {
 		Name:      g.name,
 		Kind:      "gps",
 		ValueType: "GPSFix",
+		Access:    devices.ReadOnly,
 	}
 }
 
