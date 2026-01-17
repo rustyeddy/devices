@@ -66,8 +66,8 @@ func TestBaseEmitBlockingAndClose(t *testing.T) {
 	require.Equal(t, EventOpen, ev.Kind)
 	require.Equal(t, "start", ev.Msg)
 
-	// require.NotPanics(t, b.Close)
-	// require.NotPanics(t, b.Close) // Safe to call multiple times
+	require.NotPanics(t, func() { b.Close() })
+	require.NotPanics(t, func() { b.Close() }) // Safe to call multiple times
 	_, ok := <-b.Events()
 	assert.False(t, ok)
 }

@@ -58,11 +58,8 @@ func TestRunPoller_EmitInitialAndTick_DropOnFull(t *testing.T) {
 	require.NoError(t, <-errCh)
 
 	// drain any buffered values, then verify closure
-	for {
-		_, ok := <-out
-		if !ok {
-			break
-		}
+	for range out {
+		// drain until closed
 	}
 }
 
