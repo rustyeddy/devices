@@ -2,6 +2,7 @@ package sensors
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -58,9 +59,10 @@ $GPVTG,54.70,T,,M,5.50,N,10.19,K,A*00
 $GPRMC,160446.00,A,3340.34121,N,11800.11332,W,7.25,123.40,160126,,,A*00
 `
 
-	gps := NewGTU7(GTU7Config{
+	gps, err := NewGTU7(GTU7Config{
 		Reader: strings.NewReader(input),
 	})
+	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
