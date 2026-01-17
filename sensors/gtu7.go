@@ -59,6 +59,10 @@ type GTU7Config struct {
 	// When non-nil, the driver reads NMEA sentences from Reader instead of opening
 	// a serial port. This allows unit tests to provide mock NMEA data via strings.NewReader
 	// or similar without requiring hardware.
+	// Buf sizes the out channel. Default 16.
+	Buf int
+
+	// Test injection
 	Reader io.Reader
 }
 
@@ -71,6 +75,10 @@ type GTU7 struct {
 func NewGTU7(cfg GTU7Config) *GTU7 {
 	if cfg.Factory == nil {
 		cfg.Factory = drivers.LinuxSerialFactory{}
+	}
+
+	if cfg.Buf <= 0 {
+		cfg.Buf = 16
 	}
 
 	var r io.Reader
@@ -86,7 +94,7 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 
 	return &GTU7{
 		name: cfg.Name,
-		out:  make(chan GPSFix, 4),
+		out:  make(chan GPSFix, cfg.Buf),
 		r:    r,
 	}
 }
