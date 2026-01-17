@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"strconv"
@@ -13,6 +14,27 @@ import (
 	"github.com/rustyeddy/devices/drivers"
 )
 
+// GPSFix represents a GPS position fix aggregated from NMEA sentences
+// (typically GPGGA, GPRMC, and GPVTG). Fields are populated as data becomes
+// available from the sensor.
+//
+// Position coordinates:
+//   - Lat, Lon: decimal degrees (negative for South/West)
+//   - AltMeters: altitude in meters above mean sea level
+//
+// Quality indicators:
+//   - Quality: GPS fix quality (0=invalid, 1=GPS fix, 2=DGPS fix, etc.)
+//   - HDOP: horizontal dilution of precision
+//   - Satellites: number of satellites in view
+//
+// Motion data:
+//   - SpeedKnots: ground speed in knots
+//   - SpeedMPS: ground speed in meters per second
+//   - CourseDeg: course over ground in degrees (0-360, true north)
+//
+// Status fields:
+//   - Status: RMC status ("A" = Active/valid, "V" = Void/invalid)
+//   - Date: UTC date in DDMMYY format
 type GPSFix struct {
 	Lat        float64
 	Lon        float64
@@ -25,8 +47,8 @@ type GPSFix struct {
 	SpeedMPS   float64
 	CourseDeg  float64
 
-	Status string // RMC: A/V
-	Date   string // DDMMYY
+	Status string
+	Date   string
 }
 
 type GTU7Config struct {
@@ -43,8 +65,9 @@ type GTU7Config struct {
 
 type GTU7 struct {
 	name string
+	cfg  GTU7Config
 	out  chan GPSFix
-	r    io.Reader
+	r    io.ReadCloser
 }
 
 func NewGTU7(cfg GTU7Config) (*GTU7, error) {
@@ -56,9 +79,14 @@ func NewGTU7(cfg GTU7Config) (*GTU7, error) {
 		cfg.Buf = 16
 	}
 
-	var r io.Reader
+	var r io.ReadCloser
 	if cfg.Reader != nil {
-		r = cfg.Reader
+		// Wrap test reader with io.NopCloser if it doesn't implement io.Closer
+		if rc, ok := cfg.Reader.(io.ReadCloser); ok {
+			r = rc
+		} else {
+			r = io.NopCloser(cfg.Reader)
+		}
 	} else {
 		port, err := cfg.Factory.OpenSerial(cfg.Serial)
 		if err != nil {
@@ -77,15 +105,29 @@ func NewGTU7(cfg GTU7Config) (*GTU7, error) {
 func (g *GTU7) Out() <-chan GPSFix { return g.out }
 
 func (g *GTU7) Descriptor() devices.Descriptor {
+	attrs := make(map[string]string)
+	if g.cfg.Serial.Port != "" {
+		attrs["port"] = g.cfg.Serial.Port
+	}
+	if g.cfg.Serial.Baud > 0 {
+		attrs["baud"] = strconv.Itoa(g.cfg.Serial.Baud)
+	}
+
 	return devices.Descriptor{
-		Name:      g.name,
-		Kind:      "gps",
-		ValueType: "GPSFix",
+		Name:       g.name,
+		Kind:       "gps",
+		ValueType:  "GPSFix",
+		Access:     devices.ReadOnly,
+		Tags:       []string{"gps", "navigation", "location"},
+		Attributes: attrs,
 	}
 }
 
 func (g *GTU7) Run(ctx context.Context) error {
 	defer close(g.out)
+	defer func() {
+		_ = g.r.Close()
+	}()
 
 	var last GPSFix
 	haveFix := false
@@ -130,10 +172,14 @@ func (g *GTU7) Run(ctx context.Context) error {
 				last.SpeedKnots = fix.SpeedKnots
 				last.SpeedMPS = fix.SpeedMPS
 				haveRMCSpeed = true
+			} else {
+				haveRMCSpeed = false
 			}
 			if !math.IsNaN(fix.CourseDeg) {
 				last.CourseDeg = fix.CourseDeg
 				haveRMCCourse = true
+			} else {
+				haveRMCCourse = false
 			}
 			if fix.Status != "" {
 				last.Status = fix.Status
@@ -280,10 +326,16 @@ func stripChecksum(s string) string {
 
 func parseLatLon(lat, ns, lon, ew string) (float64, float64, error) {
 	if lat == "" || lon == "" {
-		return 0, 0, errors.New("empty")
+		return 0, 0, errors.New("latitude or longitude is empty")
 	}
-	la, _ := strconv.ParseFloat(lat, 64)
-	lo, _ := strconv.ParseFloat(lon, 64)
+	la, err := strconv.ParseFloat(lat, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse latitude: %w", err)
+	}
+	lo, err := strconv.ParseFloat(lon, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse longitude: %w", err)
+	}
 
 	latDeg := math.Floor(la / 100)
 	latMin := la - latDeg*100
