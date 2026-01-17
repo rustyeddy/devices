@@ -16,6 +16,9 @@ const (
 	EventEdge EventKind = "edge"
 	// EventInfo reports an informational message.
 	EventInfo EventKind = "info"
+
+	EventRead  EventKind = "read"
+	EventWrite EventKind = "write"
 )
 
 // Event captures a device notification.
