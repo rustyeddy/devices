@@ -34,6 +34,9 @@ type GTU7Config struct {
 	Serial  drivers.SerialConfig
 	Factory drivers.SerialFactory
 
+	// Buf sizes the out channel. Default 16.
+	Buf int
+
 	// Test injection
 	Reader io.Reader
 }
@@ -67,7 +70,7 @@ func NewGTU7(cfg GTU7Config) *GTU7 {
 
 	return &GTU7{
 		name: cfg.Name,
-		out:  make(chan GPSFix, 4),
+		out:  make(chan GPSFix, cfg.Buf),
 		r:    r,
 	}
 }
