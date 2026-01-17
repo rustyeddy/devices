@@ -1,18 +1,17 @@
-package sensors
+package devices
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/rustyeddy/devices"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRunPoller_EmitInitialAndTick_DropOnFull(t *testing.T) {
 	t.Parallel()
 
-	base := devices.NewBase("sensor", 16)
+	base := NewBase("sensor", 16)
 	out := make(chan int, 1) // intentionally small to test drop-on-full
 
 	ft := &FakeTicker{Q: make(chan time.Time, 10)}
@@ -70,7 +69,7 @@ func TestRunPoller_EmitInitialAndTick_DropOnFull(t *testing.T) {
 func TestRunPoller_BlockWhenNotDropOnFull(t *testing.T) {
 	t.Parallel()
 
-	base := devices.NewBase("sensor", 16)
+	base := NewBase("sensor", 16)
 	out := make(chan int, 1)
 
 	ft := &FakeTicker{Q: make(chan time.Time, 10)}

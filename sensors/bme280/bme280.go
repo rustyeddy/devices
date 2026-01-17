@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/rustyeddy/devices"
-	"github.com/rustyeddy/devices/sensors"
 
 	"periph.io/x/conn/v3/i2c"
 	"periph.io/x/conn/v3/i2c/i2creg"
@@ -173,7 +172,7 @@ func (b *BME280) Run(ctx context.Context) error {
 		}, nil
 	}
 
-	cfg := sensors.PollConfig[Env]{
+	cfg := devices.PollConfig[Env]{
 		Interval:       b.cfg.Interval,
 		EmitInitial:    b.cfg.EmitInitial,
 		DropOnFull:     b.cfg.DropOnFull,
@@ -190,5 +189,5 @@ func (b *BME280) Run(ctx context.Context) error {
 		},
 	}
 
-	return sensors.RunPoller(ctx, &b.Base, b.out, cfg)
+	return devices.RunPoller(ctx, &b.Base, b.out, cfg)
 }

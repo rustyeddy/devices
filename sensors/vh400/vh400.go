@@ -9,7 +9,6 @@ import (
 
 	"github.com/rustyeddy/devices"
 	"github.com/rustyeddy/devices/drivers"
-	"github.com/rustyeddy/devices/sensors"
 )
 
 // VH400Config configures a VH400 volumetric water content sensor.
@@ -43,7 +42,7 @@ type VH400Config struct {
 	Buf int
 
 	// NewTicker optionally overrides ticker creation (tests).
-	NewTicker func(d time.Duration) sensors.Ticker
+	NewTicker func(d time.Duration) devices.Ticker
 }
 
 // VH400 reads VWC (volumetric water content) from an analog sensor.
@@ -148,7 +147,7 @@ func (v *VH400) Run(ctx context.Context) error {
 		return vwcFromVolts(volts), nil
 	}
 
-	return sensors.RunPoller[float64](ctx, &v.Base, v.out, sensors.PollConfig[float64]{
+	return devices.RunPoller[float64](ctx, &v.Base, v.out, devices.PollConfig[float64]{
 		Interval:       v.cfg.Interval,
 		EmitInitial:    v.cfg.EmitInitial,
 		DropOnFull:     true,

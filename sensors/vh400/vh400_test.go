@@ -8,7 +8,6 @@ import (
 
 	"github.com/rustyeddy/devices"
 	"github.com/rustyeddy/devices/drivers"
-	"github.com/rustyeddy/devices/sensors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,7 +47,7 @@ func TestVH400_Run_EmitInitialAndTick(t *testing.T) {
 
 	adc := &fakeADC{volts: 1.0}
 
-	ft := &sensors.FakeTicker{Q: make(chan time.Time, 10)}
+	ft := &devices.FakeTicker{Q: make(chan time.Time, 10)}
 
 	v := NewVH400(VH400Config{
 		Name:        "soil",
@@ -56,7 +55,7 @@ func TestVH400_Run_EmitInitialAndTick(t *testing.T) {
 		Channel:     0,
 		Interval:    1 * time.Second,
 		EmitInitial: true,
-		NewTicker:   func(time.Duration) sensors.Ticker { return ft },
+		NewTicker:   func(time.Duration) devices.Ticker { return ft },
 	})
 
 	// basic descriptor sanity

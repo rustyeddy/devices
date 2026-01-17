@@ -1,11 +1,9 @@
-package sensors
+package devices
 
 import (
 	"context"
 	"errors"
 	"time"
-
-	"github.com/rustyeddy/devices"
 )
 
 // Ticker abstracts time.Ticker for testability.
@@ -74,18 +72,18 @@ var (
 //
 // IMPORTANT: This helper owns closing Out and closing events (Base.Close()).
 // If the caller has additional resources to close, defer them BEFORE calling RunPoller.
-func RunPoller[T any](ctx context.Context, base *devices.Base, out chan T, cfg PollConfig[T]) error {
+func RunPoller[T any](ctx context.Context, base *Base, out chan T, cfg PollConfig[T]) error {
 	if base == nil {
 		return errors.New("base is nil")
 	}
-	base.Emit(devices.EventOpen, "run", nil, nil)
+	base.Emit(EventOpen, "run", nil, nil)
 
 	if cfg.Interval <= 0 {
-		base.Emit(devices.EventError, "invalid interval", ErrPollInterval, nil)
+		base.Emit(EventError, "invalid interval", ErrPollInterval, nil)
 		return ErrPollInterval
 	}
 	if cfg.Read == nil {
-		base.Emit(devices.EventError, "read func missing", ErrPollReadNil, nil)
+		base.Emit(EventError, "read func missing", ErrPollReadNil, nil)
 		return ErrPollReadNil
 	}
 
@@ -126,12 +124,12 @@ func RunPoller[T any](ctx context.Context, base *devices.Base, out chan T, cfg P
 		if cfg.SampleMeta != nil {
 			meta = cfg.SampleMeta(v)
 		}
-		base.Emit(devices.EventInfo, cfg.SampleEventMsg, nil, meta)
+		base.Emit(EventInfo, cfg.SampleEventMsg, nil, meta)
 	}
 
 	defer func() {
 		close(out)
-		base.Emit(devices.EventClose, "stop", nil, nil)
+		base.Emit(EventClose, "stop", nil, nil)
 		base.Close()
 	}()
 
@@ -139,7 +137,7 @@ func RunPoller[T any](ctx context.Context, base *devices.Base, out chan T, cfg P
 	if cfg.EmitInitial {
 		v, err := cfg.Read(ctx)
 		if err != nil {
-			base.Emit(devices.EventError, "read failed", err, nil)
+			base.Emit(EventError, "read failed", err, nil)
 		} else {
 			publish(v)
 		}
@@ -150,7 +148,7 @@ func RunPoller[T any](ctx context.Context, base *devices.Base, out chan T, cfg P
 		case <-t.C():
 			v, err := cfg.Read(ctx)
 			if err != nil {
-				base.Emit(devices.EventError, "read failed", err, nil)
+				base.Emit(EventError, "read failed", err, nil)
 				continue
 			}
 			publish(v)
