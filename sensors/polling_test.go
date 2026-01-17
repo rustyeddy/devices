@@ -9,20 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fakeTicker struct {
-	ch chan time.Time
-}
-
-func (f *fakeTicker) C() <-chan time.Time { return f.ch }
-func (f *fakeTicker) Stop()               {}
-
 func TestRunPoller_EmitInitialAndTick_DropOnFull(t *testing.T) {
 	t.Parallel()
 
 	base := devices.NewBase("sensor", 16)
 	out := make(chan int, 1) // intentionally small to test drop-on-full
 
-	ft := &fakeTicker{ch: make(chan time.Time, 10)}
+	ft := &FakeTicker{Q: make(chan time.Time, 10)}
 
 	read2 := make(chan struct{}) // closed when the *second* Read() happens
 	readCalls := 0
@@ -55,7 +48,7 @@ func TestRunPoller_EmitInitialAndTick_DropOnFull(t *testing.T) {
 	out <- 99
 
 	// trigger a tick and WAIT until the poller processed it (i.e., called Read a second time)
-	ft.ch <- time.Now()
+	ft.Q <- time.Now()
 	<-read2
 
 	// channel should still have the filled value, no new value should replace it
@@ -80,7 +73,7 @@ func TestRunPoller_BlockWhenNotDropOnFull(t *testing.T) {
 	base := devices.NewBase("sensor", 16)
 	out := make(chan int, 1)
 
-	ft := &fakeTicker{ch: make(chan time.Time, 10)}
+	ft := &FakeTicker{Q: make(chan time.Time, 10)}
 	readCalls := 0
 	cfg := PollConfig[int]{
 		Interval:    1 * time.Second,
@@ -102,14 +95,14 @@ func TestRunPoller_BlockWhenNotDropOnFull(t *testing.T) {
 	}()
 
 	// first tick publishes 1
-	ft.ch <- time.Now()
+	ft.Q <- time.Now()
 	require.Equal(t, 1, <-out)
 
 	// fill channel
 	out <- 777
 
 	// next tick: publish would block, so we must drain to allow it to proceed
-	ft.ch <- time.Now()
+	ft.Q <- time.Now()
 
 	// drain fill
 	require.Equal(t, 777, <-out)

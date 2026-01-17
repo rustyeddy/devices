@@ -14,10 +14,17 @@ type Ticker interface {
 	Stop()
 }
 
-type realTicker struct{ t *time.Ticker }
+type RealTicker struct{ t *time.Ticker }
 
-func (r realTicker) C() <-chan time.Time { return r.t.C }
-func (r realTicker) Stop()               { r.t.Stop() }
+func (r RealTicker) C() <-chan time.Time { return r.t.C }
+func (r RealTicker) Stop()               { r.t.Stop() }
+
+type FakeTicker struct {
+	Q chan time.Time
+}
+
+func (f *FakeTicker) C() <-chan time.Time { return f.Q }
+func (f *FakeTicker) Stop()               {}
 
 // PollConfig defines the common polling behavior for sensors.
 type PollConfig[T any] struct {
@@ -95,7 +102,7 @@ func RunPoller[T any](ctx context.Context, base *devices.Base, out chan T, cfg P
 	}
 	newTicker := cfg.NewTicker
 	if newTicker == nil {
-		newTicker = func(d time.Duration) Ticker { return realTicker{t: time.NewTicker(d)} }
+		newTicker = func(d time.Duration) Ticker { return RealTicker{t: time.NewTicker(d)} }
 	}
 
 	t := newTicker(cfg.Interval)

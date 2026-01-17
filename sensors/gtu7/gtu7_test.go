@@ -1,4 +1,4 @@
-package sensors
+package gtu7
 
 import (
 	"context"
