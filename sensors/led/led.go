@@ -1,10 +1,12 @@
-package gpio
+package led
 
 import (
 	"context"
+	"errors"
 
 	"github.com/rustyeddy/devices"
 	"github.com/rustyeddy/devices/drivers"
+	"github.com/rustyeddy/devices/sensors"
 )
 
 // LEDConfig configures a GPIO LED (output line).
@@ -58,7 +60,7 @@ func (l *LED) Descriptor() devices.Descriptor {
 		Tags:      []string{"gpio", "output", "led"},
 		Attributes: map[string]string{
 			"chip":   l.cfg.Chip,
-			"offset": itoa(l.cfg.Offset),
+			"offset": sensors.Itoa(l.cfg.Offset),
 		},
 	}
 }
@@ -68,7 +70,7 @@ func (l *LED) Run(ctx context.Context) error {
 	l.Emit(devices.EventOpen, "run", nil, nil)
 
 	if l.cfg.Factory == nil {
-		err := devicesErr("led factory is nil")
+		err := errors.New("led factory is nil")
 		l.Emit(devices.EventError, "factory missing", err, nil)
 		return err
 	}
@@ -107,7 +109,11 @@ func (l *LED) Run(ctx context.Context) error {
 			case l.out <- l.state:
 			default:
 			}
-			l.Emit(devices.EventInfo, "set", nil, map[string]string{"value": boolToStr(v)})
+			vstr := "false"
+			if v {
+				vstr = "true"
+			}
+			l.Emit(devices.EventInfo, "set", nil, map[string]string{"value": vstr})
 
 		case <-ctx.Done():
 			return nil

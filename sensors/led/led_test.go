@@ -1,4 +1,4 @@
-package gpio
+package led
 
 import (
 	"context"
