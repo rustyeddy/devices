@@ -29,7 +29,7 @@ type LED struct {
 }
 
 // NewLED constructs an LED with the given configuration.
-func NewLED(cfg LEDConfig) *LED {
+func New(cfg LEDConfig) *LED {
 	if cfg.Chip == "" {
 		cfg.Chip = "gpiochip0"
 	}

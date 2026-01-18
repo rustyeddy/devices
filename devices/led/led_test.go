@@ -13,7 +13,7 @@ func TestLEDRunAppliesCommands(t *testing.T) {
 	t.Parallel()
 
 	f := drivers.NewVPIOFactory()
-	led := NewLED(LEDConfig{
+	led := New(LEDConfig{
 		Name:    "led",
 		Factory: f,
 		Chip:    "chip0",
