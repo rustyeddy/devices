@@ -29,7 +29,7 @@ type Relay struct {
 }
 
 // NewRelay constructs a Relay with the given configuration.
-func NewRelay(cfg RelayConfig) *Relay {
+func New(cfg RelayConfig) *Relay {
 	return &Relay{
 		Base:  devices.NewBase(cfg.Name, 16),
 		in:    make(chan bool, 16),

@@ -13,7 +13,7 @@ func TestRelayRunAppliesCommands(t *testing.T) {
 	t.Parallel()
 
 	f := drivers.NewVPIOFactory()
-	relay := NewRelay(RelayConfig{
+	relay := New(RelayConfig{
 		Name:    "relay",
 		Factory: f,
 		Chip:    "chip0",
