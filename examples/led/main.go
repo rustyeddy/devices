@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -12,12 +13,21 @@ import (
 	"github.com/rustyeddy/devices/drivers"
 )
 
+var (
+	pin = 21
+)
+
+func init() {
+	flag.IntVar(&pin, "pin", 21, "GPIO Pin to set")
+}
+
 func main() {
+	flag.Parse()
+
 	ctx, cancel := signal.NotifyContext(
 		context.Background(),
 		os.Interrupt,
-		syscall.SIGTERM,
-	)
+		syscall.SIGTERM)
 	defer cancel()
 
 	// Factory (Linux GPIO via go-gpiocdev)
@@ -28,10 +38,9 @@ func main() {
 		Name:    "Led1",
 		Factory: f,
 		Chip:    "gpiochip0", // optional; defaults to gpiochip0 if empty
-		Offset:  17,          // GPIO line offset
+		Offset:  pin,         // GPIO line offset
 		Initial: false,
 	}
-
 	l := led.New(cfg)
 
 	// Run device

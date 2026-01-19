@@ -32,4 +32,8 @@ go.work.sum
 
 # Editor/IDE
 # .idea/
-# .vscode/
+vscode/
+
+examples/button/button
+examples/led/led
+bin

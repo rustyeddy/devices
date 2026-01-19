@@ -62,7 +62,7 @@ func (b *Base) Emit(kind EventKind, msg string, err error, meta map[string]strin
 	select {
 	case b.events <- e:
 	default:
-		// drop if slow consumer. Todo log dropped events, but must be rate limited.
+		// drop if slow consumer. TODO log dropped events, but must be rate limited.
 	}
 }
 
