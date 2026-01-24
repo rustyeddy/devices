@@ -59,7 +59,7 @@ func (b *Button) Descriptor() devices.Descriptor {
 		Tags:      []string{"gpio", "input"},
 		Attributes: map[string]string{
 			"chip":     b.cfg.Chip,
-			"offset":   itoa(b.cfg.Offset),
+			"offset":   devices.Itoa(b.cfg.Offset),
 			"bias":     string(b.cfg.Bias),
 			"edge":     string(b.cfg.Edge),
 			"debounce": b.cfg.Debounce.String(),
@@ -134,25 +134,6 @@ func (b *Button) Run(ctx context.Context) error {
 			return nil
 		}
 	}
-}
-
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	sign := ""
-	if n < 0 {
-		sign = "-"
-		n = -n
-	}
-	var buf [12]byte
-	i := len(buf)
-	for n > 0 {
-		i--
-		buf[i] = byte('0' + (n % 10))
-		n /= 10
-	}
-	return sign + string(buf[i:])
 }
 
 type devicesErr string
